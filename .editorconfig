@@ -1,0 +1,125 @@
+# Single source of formatting/naming rules for the whole repo (ums-conventions.md, Code Quality
+# & Linting section: "every module inherits it; no per-module override"). `dotnet format
+# --verify-no-changes` in CI fails the build on any diff against this file.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+
+[*.cs]
+indent_size = 4
+max_line_length = 140
+
+# --- Language conventions ---
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_prefer_braces = true:warning
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_style_prefer_top_level_statements = true:suggestion
+dotnet_style_require_accessibility_modifiers = always:warning
+dotnet_style_readonly_field = true:warning
+dotnet_style_predefined_type_for_locals_parameters_members = true:warning
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+
+# --- Naming: PascalCase for types/members, camelCase for locals/parameters, _camelCase for
+# private fields - matches ums-conventions.md's glossary-exact naming requirement in spirit
+# (the glossary controls *what* things are named; this controls *how* the casing looks). The
+# constant-fields rule is listed first so it wins over the private-fields rule below for `const`
+# fields (naming rules are matched in file order, first match wins). ---
+dotnet_naming_rule.constant_fields_pascal_case.symbols = constant_fields
+dotnet_naming_rule.constant_fields_pascal_case.style = pascal_case_style
+dotnet_naming_rule.constant_fields_pascal_case.severity = warning
+dotnet_naming_symbols.constant_fields.applicable_kinds = field
+dotnet_naming_symbols.constant_fields.required_modifiers = const
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+
+dotnet_naming_rule.private_fields_underscore_camel_case.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore_camel_case.style = underscore_camel_case
+dotnet_naming_rule.private_fields_underscore_camel_case.severity = warning
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+
+dotnet_naming_rule.interfaces_i_prefix.symbols = interfaces
+dotnet_naming_rule.interfaces_i_prefix.style = i_prefix_pascal_case
+dotnet_naming_rule.interfaces_i_prefix.severity = warning
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_style.i_prefix_pascal_case.capitalization = pascal_case
+dotnet_naming_style.i_prefix_pascal_case.required_prefix = I
+
+# --- StyleCop.Analyzers overrides ---
+# XML doc-comment enforcement (SA1600 family) is off: house style is "no comments unless the WHY
+# is non-obvious" - forcing a doc comment on every public member would fight that directly. SA0001
+# is StyleCop's own meta-warning that doc-comment analysis is off because GenerateDocumentationFile
+# is false - expected given the above, not a real problem.
+dotnet_diagnostic.SA0001.severity = none
+dotnet_diagnostic.SA1600.severity = none
+dotnet_diagnostic.SA1601.severity = none
+dotnet_diagnostic.SA1602.severity = none
+dotnet_diagnostic.SA1633.severity = none
+# The rest of the SA16xx family enforces *completeness* of a doc comment that does exist (every
+# <param>/<returns>/<typeparam> present). House style writes a <summary> only to explain a
+# non-obvious WHY, never as an API-doc exercise, so this family stays off consistently with SA1600
+# above rather than forcing full parameter-by-parameter documentation whenever a WHY-comment exists.
+dotnet_diagnostic.SA1610.severity = none
+dotnet_diagnostic.SA1611.severity = none
+dotnet_diagnostic.SA1612.severity = none
+dotnet_diagnostic.SA1613.severity = none
+dotnet_diagnostic.SA1614.severity = none
+dotnet_diagnostic.SA1615.severity = none
+dotnet_diagnostic.SA1616.severity = none
+dotnet_diagnostic.SA1617.severity = none
+dotnet_diagnostic.SA1618.severity = none
+dotnet_diagnostic.SA1619.severity = none
+dotnet_diagnostic.SA1620.severity = none
+dotnet_diagnostic.SA1621.severity = none
+dotnet_diagnostic.SA1622.severity = none
+dotnet_diagnostic.SA1623.severity = none
+dotnet_diagnostic.SA1624.severity = none
+dotnet_diagnostic.SA1625.severity = none
+dotnet_diagnostic.SA1626.severity = none
+dotnet_diagnostic.SA1627.severity = none
+dotnet_diagnostic.SA1628.severity = none
+dotnet_diagnostic.SA1629.severity = none
+dotnet_diagnostic.SA1630.severity = none
+dotnet_diagnostic.SA1631.severity = none
+dotnet_diagnostic.SA1632.severity = none
+# UMS.Shared.* is the platform-wide, ADR-driven namespace convention (ums-conventions.md) for
+# every cross-cutting library - CA1716 objects to "Shared" as a VB.NET reserved keyword, which
+# doesn't apply to a C#-only solution and would otherwise fire on every shared-kernel namespace.
+dotnet_diagnostic.CA1716.severity = none
+# SA1101 ("this." prefix on every member access) fights readability more than it helps and neither
+# kart-commerce's own codebase nor this repo's naming rule below assumes it's required.
+dotnet_diagnostic.SA1101.severity = none
+# This repo's naming rule (below) deliberately requires an underscore prefix on private fields -
+# SA1309's default assumes the opposite and would contradict it.
+dotnet_diagnostic.SA1309.severity = none
+# CA1848 (LoggerMessage source-generated delegates) is a hot-path perf optimization; the ceremony
+# it demands on every log call isn't justified until a module's actual load profile calls for it.
+dotnet_diagnostic.CA1848.severity = none
+# File-scoped namespaces (SA1200 wants using-inside-namespace, which file-scoped namespaces make
+# moot) and the "using directives must be placed correctly" rule already covered by the language
+# convention above.
+dotnet_diagnostic.SA1200.severity = none
+# One type per file is still enforced (SA1402) except for tightly-coupled small types (a record
+# and its validator, a value object and its converter) - reviewed case by case, not blanket-off.
+dotnet_diagnostic.SA1402.severity = suggestion
+# Field/property/method ordering (SA1201/SA1214) - useful default, kept at warning.
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

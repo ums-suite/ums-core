@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1
+#
+# Builds UMS.Workers - the background job runner (ADR-0014), a separate container from UMS.Host
+# even though both live in this repo (ums-core is one deployable per ADR-0001; UMS.Workers is a
+# second, independently-scaled deployable per container-diagram.md).
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY . .
+RUN --mount=type=cache,target=/root/.nuget/packages,id=ums-core-nuget-packages \
+    dotnet restore src/Workers/UMS.Workers/UMS.Workers.csproj
+
+RUN --mount=type=cache,target=/root/.nuget/packages,id=ums-core-nuget-packages \
+    dotnet publish src/Workers/UMS.Workers/UMS.Workers.csproj -c Release -o /app/publish --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /app/publish .
+
+# No public traffic (ums-conventions.md: "UMS.Workers exposes only its /health/live +
+# /health/ready endpoints") - this port is for the kubelet probe only, never an ingress route.
+ENV ASPNETCORE_URLS=http://+:8081
+EXPOSE 8081
+
+USER $APP_UID
+
+ENTRYPOINT ["dotnet", "UMS.Workers.dll"]

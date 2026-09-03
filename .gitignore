@@ -7,6 +7,9 @@ obj/
 *.received.*
 TestResults/
 
+# Local-development rolling-file log sink (UMS.Shared.Observability, Development environment only)
+logs/
+
 # dotenv environment variable files
 .env
 .env.*

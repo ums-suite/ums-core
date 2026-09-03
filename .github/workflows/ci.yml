@@ -1,0 +1,30 @@
+name: CI
+
+# Calls ums-devops's reusable .NET module workflow (ums-conventions.md: "every repo calls the
+# reusable workflow published from ums-devops - no repo hand-rolls its own pipeline from scratch").
+# One shared solution build+test+scan job, then a second Docker build+scan pass for UMS.Workers'
+# own Dockerfile (Dockerfile.workers) - ums-core has two independently-deployed images
+# (container-diagram.md) even though both build from this one solution.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test-scan:
+    name: Build, Test, Scan (UMS.Core.slnx)
+    uses: ums-suite/ums-devops/.github/workflows/dotnet-module-ci.yml@main
+    with:
+      solution-path: UMS.Core.slnx
+      image-name: ums-core
+      dockerfile-path: Dockerfile
+
+  workers-docker-scan:
+    name: Docker Build, Scan (UMS.Workers)
+    needs: build-test-scan
+    uses: ums-suite/ums-devops/.github/workflows/dotnet-module-ci.yml@main
+    with:
+      solution-path: UMS.Core.slnx
+      image-name: ums-workers
+      dockerfile-path: Dockerfile.workers

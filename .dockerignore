@@ -1,0 +1,16 @@
+**/bin/
+**/obj/
+**/TestResults/
+.git/
+.github/
+.vs/
+.vscode/
+.idea/
+**/*.user
+logs/
+
+# Local developer secrets - never baked into an image (ums-conventions.md, Resilience &
+# Reliability: "Secrets: never committed, never hardcoded").
+.env
+.env.*
+!.env.example

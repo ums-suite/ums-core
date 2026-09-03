@@ -1,0 +1,39 @@
+<Project>
+
+  <!--
+    Solution-wide settings (ums-conventions.md, Code Quality & Linting section) - every module
+    project under src/UMS.Modules inherits this with zero per-project opt-in. A nullable-reference
+    warning is a build failure here on purpose: it's the cheapest available defense against the
+    bare-primitive/untyped-null bugs the Domain Modeling rules exist to prevent.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+
+  <!--
+    StyleCop.Analyzers enforces the naming/ordering conventions in ums-conventions.md at compile
+    time. PrivateAssets="all" keeps it a build-time-only dependency - it never flows to consumers
+    of a project reference. Test projects are excluded: StyleCop's documentation/ordering rules
+    add ceremony to test code without a corresponding correctness benefit.
+  -->
+  <ItemGroup Condition="!$(MSBuildProjectName.EndsWith('Tests'))">
+    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556" PrivateAssets="all" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" Link="stylecop.json" />
+  </ItemGroup>
+
+  <!-- Underscore-separated_test_method_names read as sentences describing the scenario under
+       test - the standard xUnit convention this repo follows - which CA1707 objects to by default. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+</Project>

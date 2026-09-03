@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Gives this classlib access to IExceptionHandler/ProblemDetails/HttpContext without pulling
+         a mismatched standalone Http.Abstractions package version - the standard way a shared
+         ASP.NET Core library stays in lockstep with whatever host version references it. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UMS.Shared.Observability\UMS.Shared.Observability.csproj" />
+  </ItemGroup>
+
+</Project>

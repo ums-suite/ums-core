@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Host/">
+    <Project Path="src/Host/UMS.Host.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/UMS.Shared.ErrorHandling/UMS.Shared.ErrorHandling.csproj" />
+    <Project Path="src/Shared/UMS.Shared.Observability/UMS.Shared.Observability.csproj" />
+    <Project Path="src/Shared/UMS.Shared.Resilience/UMS.Shared.Resilience.csproj" />
+  </Folder>
+  <Folder Name="/src/Workers/">
+    <Project Path="src/Workers/UMS.Workers/UMS.Workers.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/UMS.Shared.Tests/UMS.Shared.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/ArchitectureTests/">
+    <Project Path="tests/ArchitectureTests/UMS.ArchitectureTests.csproj" />
+  </Folder>
+</Solution>
