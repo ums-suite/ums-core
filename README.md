@@ -1,10 +1,10 @@
 # ums-core
 
-The University Management System backend — a **.NET modular monolith** hosting all 15 bounded-context modules behind one deployable API (`kart-commerce`'s counterpart, run the opposite way: one deployment, disciplined internal boundaries instead of 20 services).
+The University Management System backend — a **.NET modular monolith** hosting all 18 bounded-context modules behind one deployable API (`kart-commerce`'s counterpart, run the opposite way: one deployment, disciplined internal boundaries instead of 20 services).
 
 ## Modules
 
-Identity, Organization, Admission, Academic, Student, Faculty, Finance, Hostel, Library, Alumni, Content, Documents, Notifications, Reporting, Audit — see [`ums-platform`'s module boundary map](https://github.com/ums-suite/ums-platform/blob/main/docs/architecture/module-boundaries.md) for the dependency graph and [`docs/services/`](https://github.com/ums-suite/ums-platform/tree/main/docs/services) for each module's full requirement spec.
+Identity, Organization, Admission, Academic, Student, Faculty, Finance, Hostel, Library, Alumni, Content, Documents, Notifications, Reporting, Audit, Learning, Research, Career — see [`ums-platform`'s module boundary map](https://github.com/ums-suite/ums-platform/blob/main/docs/architecture/module-boundaries.md) for the dependency graph and [`docs/services/`](https://github.com/ums-suite/ums-platform/tree/main/docs/services) for each module's full requirement spec.
 
 ## Tech Stack
 
