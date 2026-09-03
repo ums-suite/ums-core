@@ -8,7 +8,7 @@ Identity, Organization, Admission, Academic, Student, Faculty, Finance, Hostel, 
 
 ## Tech Stack
 
-.NET Core (Web API) · PostgreSQL (one database, schema per module) · Redis (cache/session/coordination) · Docker · Kubernetes.
+.NET 10 (ASP.NET Core Web API) · PostgreSQL (one database, schema per module) · Redis (cache/session/coordination) · Docker · Kubernetes.
 
 ## Architecture
 
