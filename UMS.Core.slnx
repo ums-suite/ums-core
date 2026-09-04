@@ -12,6 +12,8 @@
     <Project Path="src/Shared/UMS.Shared.Outbox/UMS.Shared.Outbox.csproj" />
     <Project Path="src/Shared/UMS.Shared.Audit/UMS.Shared.Audit.csproj" />
     <Project Path="src/Shared/UMS.Shared.Organization/UMS.Shared.Organization.csproj" />
+    <Project Path="src/Shared/UMS.Shared.Identity/UMS.Shared.Identity.csproj" />
+    <Project Path="src/Shared/UMS.Shared.Notifications/UMS.Shared.Notifications.csproj" />
   </Folder>
   <Folder Name="/src/Workers/">
     <Project Path="src/Workers/UMS.Workers/UMS.Workers.csproj" />
@@ -40,6 +42,12 @@
     <Project Path="src/UMS.Modules/Documents/UMS.Modules.Documents.Infrastructure/UMS.Modules.Documents.Infrastructure.csproj" />
     <Project Path="src/UMS.Modules/Documents/UMS.Modules.Documents.Api/UMS.Modules.Documents.Api.csproj" />
   </Folder>
+  <Folder Name="/src/UMS.Modules/Notifications/">
+    <Project Path="src/UMS.Modules/Notifications/UMS.Modules.Notifications.Domain/UMS.Modules.Notifications.Domain.csproj" />
+    <Project Path="src/UMS.Modules/Notifications/UMS.Modules.Notifications.Application/UMS.Modules.Notifications.Application.csproj" />
+    <Project Path="src/UMS.Modules/Notifications/UMS.Modules.Notifications.Infrastructure/UMS.Modules.Notifications.Infrastructure.csproj" />
+    <Project Path="src/UMS.Modules/Notifications/UMS.Modules.Notifications.Api/UMS.Modules.Notifications.Api.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/UMS.Shared.Tests/UMS.Shared.Tests.csproj" />
     <Project Path="tests/UMS.Modules.Identity.UnitTests/UMS.Modules.Identity.UnitTests.csproj" />
@@ -50,6 +58,8 @@
     <Project Path="tests/UMS.Modules.Organization.IntegrationTests/UMS.Modules.Organization.IntegrationTests.csproj" />
     <Project Path="tests/UMS.Modules.Documents.UnitTests/UMS.Modules.Documents.UnitTests.csproj" />
     <Project Path="tests/UMS.Modules.Documents.IntegrationTests/UMS.Modules.Documents.IntegrationTests.csproj" />
+    <Project Path="tests/UMS.Modules.Notifications.UnitTests/UMS.Modules.Notifications.UnitTests.csproj" />
+    <Project Path="tests/UMS.Modules.Notifications.IntegrationTests/UMS.Modules.Notifications.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/ArchitectureTests/">
     <Project Path="tests/ArchitectureTests/UMS.ArchitectureTests.csproj" />

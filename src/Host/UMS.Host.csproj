@@ -35,6 +35,11 @@
     <ProjectReference Include="..\UMS.Modules\Documents\UMS.Modules.Documents.Api\UMS.Modules.Documents.Api.csproj" />
     <ProjectReference Include="..\UMS.Modules\Documents\UMS.Modules.Documents.Infrastructure\UMS.Modules.Documents.Infrastructure.csproj" />
 
+    <!-- Notifications (release/DEVELOPMENT_PLAN.md Flow #8) - depends only on Identity
+         (module-boundaries.md); resolves IAuditRecorder (Audit) and IRecipientDirectory (Identity)
+         as its own cross-module read/write paths, both already registered above. -->
+    <ProjectReference Include="..\UMS.Modules\Notifications\UMS.Modules.Notifications.Api\UMS.Modules.Notifications.Api.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Notifications\UMS.Modules.Notifications.Infrastructure\UMS.Modules.Notifications.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

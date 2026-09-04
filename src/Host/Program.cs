@@ -8,6 +8,8 @@ using UMS.Modules.Documents.Api;
 using UMS.Modules.Documents.Infrastructure;
 using UMS.Modules.Identity.Api;
 using UMS.Modules.Identity.Infrastructure;
+using UMS.Modules.Notifications.Api;
+using UMS.Modules.Notifications.Infrastructure;
 using UMS.Modules.Organization.Api;
 using UMS.Modules.Organization.Infrastructure;
 using UMS.Shared.Authorization;
@@ -43,6 +45,15 @@ builder.Services.AddOrganizationModule(builder.Configuration);
 // calls back into Audit's IAuditRecorder (DOC-14, already registered above) for official-record
 // document types.
 builder.Services.AddDocumentsModule(builder.Configuration);
+
+// Notifications (release/DEVELOPMENT_PLAN.md Flow #8) - depends only on Identity
+// (module-boundaries.md): resolves UMS.Shared.Identity.IRecipientDirectory (registered above by
+// AddIdentityModule) for recipient contact-info/language lookup (NTF-2), and
+// UMS.Shared.Audit.IAuditRecorder (registered above by AddAuditModule) for NTF-17's audit
+// integration. Documents (DOC-13, above) resolves its own
+// UMS.Shared.Notifications.INotificationRequestIntake cross-module call against this module's real
+// implementation, registered here.
+builder.Services.AddNotificationsModule(builder.Configuration);
 
 // Shared JWT authentication + permission-based authorization (ums-conventions.md: one shared
 // implementation, not per-module reinvention) - every module's protected endpoints gate through
@@ -91,6 +102,7 @@ await app.Services.UseIdentityModuleAsync();
 await app.Services.UseAuditModuleAsync();
 await app.Services.UseOrganizationModuleAsync();
 await app.Services.UseDocumentsModuleAsync();
+await app.Services.UseNotificationsModuleAsync();
 
 app.UseUmsObservability();
 app.UseUmsErrorHandling();
@@ -118,6 +130,7 @@ app.MapIdentityModule();
 app.MapAuditModule();
 app.MapOrganizationModule();
 app.MapDocumentsModule();
+app.MapNotificationsModule();
 
 app.Run();
 

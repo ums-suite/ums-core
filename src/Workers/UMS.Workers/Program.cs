@@ -1,10 +1,15 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using UMS.Modules.Audit.Infrastructure;
 using UMS.Modules.Documents.Infrastructure;
+using UMS.Modules.Identity.Infrastructure;
+using UMS.Modules.Notifications.Infrastructure;
+using UMS.Modules.Organization.Infrastructure;
 using UMS.Shared.Observability;
+using UMS.Shared.Resilience;
 using UMS.Workers;
 using UMS.Workers.AuditExports;
 using UMS.Workers.BulkDocumentGeneration;
+using UMS.Workers.Notifications;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +33,34 @@ builder.Services.AddHostedService<BulkGenerationRelayWorker>();
 builder.Services.AddHostedService<DocumentGenerationRetryRelayWorker>();
 builder.Services.AddHostedService<PendingDocumentSweepWorker>();
 
+// UMS.Shared.Resilience's Redis multiplexer (ADR-0007) - Notifications' OTP rate limiter and every
+// channel provider's Polly-wrapped HttpClient (NTF-9/10/11 + WhatsApp) both need it.
+await builder.Services.AddUmsResilienceAsync(builder.Configuration);
+
+// Organization registered before Identity - Identity.Infrastructure's own DI now resolves
+// UMS.Shared.Organization.IOrganizationNodeExistenceChecker (Flow #6) unconditionally as part of
+// AddIdentityModule, the same real dependency the Host composition root already satisfies.
+builder.Services.AddOrganizationModule(builder.Configuration);
+
+// Identity registered here only so Notifications' own UMS.Shared.Identity.IRecipientDirectory
+// cross-module read path (NTF-2) has a real implementation to resolve in THIS process too - this
+// worker process never serves an HTTP request of its own, so none of Identity's authentication/
+// authorization wiring is exercised here.
+builder.Services.AddIdentityModule(builder.Configuration);
+
+// Notifications' per-channel dispatch workers (NTF-13's retry/dead-letter loop, NTF-16's
+// bulk/backpressure-aware prioritized dispatch) - one independent BackgroundService per channel so
+// a backed-up channel (edge-cases.md's "SMS provider outage") never delays another channel's own
+// dispatch (ADR-0009). Also gives Documents' DOC-13 call into
+// UMS.Shared.Notifications.INotificationRequestIntake a real implementation to resolve when the
+// bulk generation path runs from this process.
+builder.Services.AddNotificationsModule(builder.Configuration);
+builder.Services.AddHostedService<EmailDispatchWorker>();
+builder.Services.AddHostedService<SmsDispatchWorker>();
+builder.Services.AddHostedService<WhatsAppDispatchWorker>();
+builder.Services.AddHostedService<PushDispatchWorker>();
+builder.Services.AddHostedService<InAppDispatchWorker>();
+
 // Same readiness contract as UMS.Host (ums-conventions.md, Observability: "UMS.Workers exposes
 // the same two endpoints"). Per-job outbox/queue-depth checks (ADR-0014) are added once the first
 // real worker (module-owned outbox relay) exists.
@@ -50,6 +83,9 @@ var app = builder.Build();
 // start first (ADR-0001's single physical database).
 await app.Services.UseAuditModuleAsync();
 await app.Services.UseDocumentsModuleAsync();
+await app.Services.UseOrganizationModuleAsync();
+await app.Services.UseIdentityModuleAsync();
+await app.Services.UseNotificationsModuleAsync();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });

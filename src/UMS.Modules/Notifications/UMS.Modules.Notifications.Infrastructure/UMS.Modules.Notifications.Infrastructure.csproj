@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>UMS.Modules.Notifications.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Pinned to 10.0.11 explicitly - same MSB3277 binding-conflict rationale as Identity's/
+         Audit's own Infrastructure projects (see their .csproj comments). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.11" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UMS.Modules.Notifications.Domain\UMS.Modules.Notifications.Domain.csproj" />
+    <ProjectReference Include="..\UMS.Modules.Notifications.Application\UMS.Modules.Notifications.Application.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Authorization\UMS.Shared.Authorization.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Audit\UMS.Shared.Audit.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Identity\UMS.Shared.Identity.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Notifications\UMS.Shared.Notifications.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Outbox\UMS.Shared.Outbox.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Resilience\UMS.Shared.Resilience.csproj" />
+  </ItemGroup>
+
+</Project>

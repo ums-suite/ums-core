@@ -227,9 +227,29 @@ public sealed class BulkGenerationRelayWorker(IServiceScopeFactory scopeFactory,
 
             await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
-            await notifications.PublishAsync(
-                new NotificationRequest(job.RequestedByUserId, "BulkDocumentGenerationCompleted", $"Your bulk {job.DocumentType} generation job finished ({job.CompletedCount - job.DeadLetteredCount}/{job.TotalItems} succeeded).", message.Id.ToString()),
-                cancellationToken).ConfigureAwait(false);
+            try
+            {
+                await notifications.PublishAsync(
+                    new NotificationRequest(
+                        job.RequestedByUserId,
+                        "BulkDocumentGenerationCompleted",
+                        job.Id.Value.ToString(),
+                        new Dictionary<string, string>
+                        {
+                            ["documentType"] = job.DocumentType.ToString(),
+                            ["succeededCount"] = (job.CompletedCount - job.DeadLetteredCount).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                            ["totalItems"] = job.TotalItems.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                        },
+                        message.Id.ToString()),
+                    cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // DOC-13: best-effort - a Notifications outage must never re-queue an
+                // otherwise-completed bulk job (GenerateDocumentService's own
+                // PublishNotificationSafelyAsync applies this same rule on the sync path).
+                logger.LogWarning(ex, "NotificationRequest publish failed for BulkGenerationJob {JobId} - the job itself is unaffected.", job.Id);
+            }
 
             await outbox.MarkProcessedAsync(message.Id, cancellationToken).ConfigureAwait(false);
         }

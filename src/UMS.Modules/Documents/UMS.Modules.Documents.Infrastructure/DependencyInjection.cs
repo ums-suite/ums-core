@@ -55,9 +55,13 @@ public static class DependencyInjection
         services.Configure<DocumentRenderingOptions>(configuration.GetSection("Documents:Rendering"));
         services.AddSingleton<IDocumentRenderer, DocumentPdfRenderer>();
 
-        // DOC-13: explicit stub seam until Notifications (Flow #8) exists - see
-        // StubNotificationRequestPublisher's own remarks.
-        services.AddSingleton<INotificationRequestPublisher, StubNotificationRequestPublisher>();
+        // DOC-13: Notifications (Flow #8) now exists - resolves the real cross-module intake
+        // adapter (NotificationRequestIntakeAdapter) in place of the former
+        // StubNotificationRequestPublisher, the same in-process shared-interface pattern
+        // UMS.Shared.Audit/UMS.Shared.Organization already established. Scoped, not singleton
+        // (the former stub's lifetime) - the real INotificationRequestIntake implementation
+        // consumes a scoped NotificationsDbContext underneath.
+        services.AddScoped<INotificationRequestPublisher, NotificationRequestIntakeAdapter>();
 
         services.AddScoped<GeneratedDocumentPipeline>();
         services.AddScoped<DocumentTemplateService>();

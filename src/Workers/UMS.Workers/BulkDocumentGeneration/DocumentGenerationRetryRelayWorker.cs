@@ -78,9 +78,24 @@ public sealed class DocumentGenerationRetryRelayWorker(IServiceScopeFactory scop
 
             if (outcome == PipelineOutcome.Ready && document.RequestedByUserId is { } recipientId)
             {
-                await notifications.PublishAsync(
-                    new NotificationRequest(recipientId, "DocumentGenerated", $"Your {document.DocumentType} is ready.", message.Id.ToString()),
-                    cancellationToken).ConfigureAwait(false);
+                try
+                {
+                    await notifications.PublishAsync(
+                        new NotificationRequest(
+                            recipientId,
+                            "DocumentGenerated",
+                            document.Id.Value.ToString(),
+                            new Dictionary<string, string> { ["documentType"] = document.DocumentType.ToString() },
+                            message.Id.ToString()),
+                        cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // DOC-13: best-effort - a Notifications outage must never re-queue an
+                    // otherwise-successful generation retry (GenerateDocumentService's own
+                    // PublishNotificationSafelyAsync applies this same rule on the sync path).
+                    logger.LogWarning(ex, "NotificationRequest publish failed for GeneratedDocument {DocumentId} - the document itself is unaffected.", document.Id);
+                }
             }
 
             // A repeat StorageOutageRetryQueued outcome enqueues its own fresh retry message
