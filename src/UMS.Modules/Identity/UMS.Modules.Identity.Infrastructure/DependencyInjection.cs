@@ -43,7 +43,15 @@ public static class DependencyInjection
         services.AddScoped<IPermissionCatalogRepository, PermissionCatalogRepository>();
 
         services.AddSingleton<IClock, SystemClock>();
-        services.AddSingleton<IOrganizationNodeExistenceChecker, StubOrganizationNodeExistenceChecker>();
+
+        // release/DEVELOPMENT_PLAN.md Flow #6 (Organization) now exists - resolves the real
+        // cross-module existence check via UMS.Shared.Organization's shared interface. Scoped
+        // (not Singleton, unlike most of this method's other registrations) because
+        // OrganizationNodeExistenceCheckerAdapter's own dependency
+        // (UMS.Shared.Organization.IOrganizationNodeExistenceChecker) is itself Scoped, bound to a
+        // per-request OrganizationDbContext - see that registration's own remarks in
+        // UMS.Modules.Organization.Infrastructure.DependencyInjection.
+        services.AddScoped<IOrganizationNodeExistenceChecker, OrganizationNodeExistenceCheckerAdapter>();
 
         services.Configure<Argon2idOptions>(configuration.GetSection("Identity:Argon2"));
         services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();

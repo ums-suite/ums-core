@@ -30,8 +30,11 @@
     <ProjectReference Include="..\UMS.Modules\Identity\UMS.Modules.Identity.Infrastructure\UMS.Modules.Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\UMS.Modules\Audit\UMS.Modules.Audit.Api\UMS.Modules.Audit.Api.csproj" />
     <ProjectReference Include="..\UMS.Modules\Audit\UMS.Modules.Audit.Infrastructure\UMS.Modules.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Organization\UMS.Modules.Organization.Api\UMS.Modules.Organization.Api.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Organization\UMS.Modules.Organization.Infrastructure\UMS.Modules.Organization.Infrastructure.csproj" />
     <ProjectReference Include="..\UMS.Modules\Documents\UMS.Modules.Documents.Api\UMS.Modules.Documents.Api.csproj" />
     <ProjectReference Include="..\UMS.Modules\Documents\UMS.Modules.Documents.Infrastructure\UMS.Modules.Documents.Infrastructure.csproj" />
+
   </ItemGroup>
 
 </Project>

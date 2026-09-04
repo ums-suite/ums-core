@@ -29,6 +29,11 @@
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Resilience\UMS.Shared.Resilience.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Authorization\UMS.Shared.Authorization.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Outbox\UMS.Shared.Outbox.csproj" />
+    <!-- Flow #6 (Organization) now exists - resolves the real cross-module existence-check
+         implementation (OrganizationNodeExistenceCheckerAdapter) in place of the former
+         StubOrganizationNodeExistenceChecker, the same in-process shared-interface pattern
+         UMS.Shared.Audit already established. -->
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Organization\UMS.Shared.Organization.csproj" />
   </ItemGroup>
 
 </Project>
