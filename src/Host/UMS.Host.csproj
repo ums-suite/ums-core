@@ -16,6 +16,18 @@
     <ProjectReference Include="..\Shared\UMS.Shared.Observability\UMS.Shared.Observability.csproj" />
     <ProjectReference Include="..\Shared\UMS.Shared.ErrorHandling\UMS.Shared.ErrorHandling.csproj" />
     <ProjectReference Include="..\Shared\UMS.Shared.Resilience\UMS.Shared.Resilience.csproj" />
+    <ProjectReference Include="..\Shared\UMS.Shared.Authorization\UMS.Shared.Authorization.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Host wires each module's Api (endpoints) and Infrastructure (DI composition) - never a
+      module's Domain/Application directly (module-boundaries.md: the Host is a composition root,
+      not a place business logic lives). Identity is the first module (release/DEVELOPMENT_PLAN.md
+      Flow #4); every later module adds its own two ProjectReference lines here the same way.
+    -->
+    <ProjectReference Include="..\UMS.Modules\Identity\UMS.Modules.Identity.Api\UMS.Modules.Identity.Api.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Identity\UMS.Modules.Identity.Infrastructure\UMS.Modules.Identity.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

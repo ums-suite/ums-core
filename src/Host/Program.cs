@@ -1,6 +1,9 @@
 using HealthChecks.NpgSql;
 using HealthChecks.Redis;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using UMS.Modules.Identity.Api;
+using UMS.Modules.Identity.Infrastructure;
+using UMS.Shared.Authorization;
 using UMS.Shared.ErrorHandling;
 using UMS.Shared.Observability;
 using UMS.Shared.Resilience;
@@ -10,7 +13,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddUmsObservability(serviceName: "ums-core");
 
 builder.Services.AddUmsErrorHandling();
-builder.Services.AddUmsResilience(builder.Configuration);
+await builder.Services.AddUmsResilienceAsync(builder.Configuration);
+
+// Identity (release/DEVELOPMENT_PLAN.md Flow #4) is the first business module - every later
+// module adds its own AddXModule(builder.Configuration) call here the same way.
+builder.Services.AddIdentityModule(builder.Configuration);
+
+// Shared JWT authentication + permission-based authorization (ums-conventions.md: one shared
+// implementation, not per-module reinvention) - every module's protected endpoints gate through
+// this, never their own hand-rolled [Authorize] policy.
+builder.Services.AddUmsAuthentication(builder.Configuration);
+builder.Services.AddUmsAuthorization();
 
 builder.Services.AddOpenApi();
 
@@ -31,6 +44,11 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+// Applies each module's pending EF Core migrations and syncs the Permission catalog - see
+// AddIdentityModule's own UseIdentityModuleAsync remarks. Every later module adds its own
+// await line here the same way.
+await app.Services.UseIdentityModuleAsync();
+
 app.UseUmsObservability();
 app.UseUmsErrorHandling();
 
@@ -41,14 +59,19 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
 // Liveness: process is up, no dependency checks - governs whether Kubernetes restarts a wedged
 // pod. Readiness: Postgres + Redis reachable - governs whether Kubernetes routes traffic to this
 // pod (ums-conventions.md, Observability).
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
 
-// src/UMS.Modules/<Module> endpoints register themselves under /api/v1/<module>/... starting with
-// Identity (release/DEVELOPMENT_PLAN.md Flow #4) - nothing to map here yet.
+// src/UMS.Modules/<Module> endpoints register themselves under /api/v1/<module>/..., starting
+// with Identity (release/DEVELOPMENT_PLAN.md Flow #4).
+app.MapIdentityModule();
+
 app.Run();
 
 /// <summary>Entry point type, exposed for WebApplicationFactory-based integration tests.</summary>

@@ -23,8 +23,20 @@
     <ProjectReference Include="..\..\src\Shared\UMS.Shared.Observability\UMS.Shared.Observability.csproj" />
     <ProjectReference Include="..\..\src\Shared\UMS.Shared.ErrorHandling\UMS.Shared.ErrorHandling.csproj" />
     <ProjectReference Include="..\..\src\Shared\UMS.Shared.Resilience\UMS.Shared.Resilience.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Authorization\UMS.Shared.Authorization.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Domain\UMS.Shared.Domain.csproj" />
     <ProjectReference Include="..\..\src\Host\UMS.Host.csproj" />
     <ProjectReference Include="..\..\src\Workers\UMS.Workers\UMS.Workers.csproj" />
+    <!--
+      Referenced so each UMS.Modules.*.dll actually lands next to this test assembly - that's what
+      makes Modules_do_not_reference_another_modules_internals stop running vacuously (see this
+      test class's own remarks). Only Domain/Application/Infrastructure are referenced here (never
+      Api, which legitimately depends on Application) since those three are exactly what the
+      module-isolation rule forbids another module from reaching into.
+    -->
+    <ProjectReference Include="..\..\src\UMS.Modules\Identity\UMS.Modules.Identity.Domain\UMS.Modules.Identity.Domain.csproj" />
+    <ProjectReference Include="..\..\src\UMS.Modules\Identity\UMS.Modules.Identity.Application\UMS.Modules.Identity.Application.csproj" />
+    <ProjectReference Include="..\..\src\UMS.Modules\Identity\UMS.Modules.Identity.Infrastructure\UMS.Modules.Identity.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
