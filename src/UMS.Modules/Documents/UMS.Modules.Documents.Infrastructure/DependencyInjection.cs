@@ -63,6 +63,10 @@ public static class DependencyInjection
         // consumes a scoped NotificationsDbContext underneath.
         services.AddScoped<INotificationRequestPublisher, NotificationRequestIntakeAdapter>();
 
+        // release/DEVELOPMENT_PLAN.md Flow #11 (Student, STU-3) - the cross-module inbound path
+        // Student resolves to request the student ID card as a side effect of CreateStudentRecord.
+        services.AddScoped<UMS.Shared.Documents.IDocumentGenerationRequester, UMS.Modules.Documents.Infrastructure.Student.DocumentGenerationRequesterAdapter>();
+
         services.AddScoped<GeneratedDocumentPipeline>();
         services.AddScoped<DocumentTemplateService>();
         services.AddScoped<GenerateDocumentService>();

@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>UMS.Modules.Student.Api</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UMS.Modules.Student.Application\UMS.Modules.Student.Application.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Authorization\UMS.Shared.Authorization.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.ErrorHandling\UMS.Shared.ErrorHandling.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Observability\UMS.Shared.Observability.csproj" />
+  </ItemGroup>
+
+</Project>

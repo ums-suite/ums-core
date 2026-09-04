@@ -14,6 +14,8 @@ using UMS.Modules.Notifications.Api;
 using UMS.Modules.Notifications.Infrastructure;
 using UMS.Modules.Organization.Api;
 using UMS.Modules.Organization.Infrastructure;
+using UMS.Modules.Student.Api;
+using UMS.Modules.Student.Infrastructure;
 using UMS.Shared.Authorization;
 using UMS.Shared.ErrorHandling;
 using UMS.Shared.Observability;
@@ -65,6 +67,15 @@ builder.Services.AddNotificationsModule(builder.Configuration);
 // registration now resolves UMS.Shared.Faculty.IFacultyEmploymentChecker instead - see
 // Organization.Infrastructure's own DependencyInjection.cs.
 builder.Services.AddFacultyModule(builder.Configuration);
+
+// Student — Core (release/DEVELOPMENT_PLAN.md Flow #11) - depends on Identity, Organization,
+// Documents, and Notifications (module-boundaries.md), all registered above: resolves
+// UMS.Shared.Identity.IUserProvisioner (STU-2), UMS.Shared.Documents.IDocumentGenerationRequester
+// (STU-3), UMS.Shared.Notifications.INotificationRequestIntake (STU-4), and
+// UMS.Shared.Organization.IOrganizationNodeExistenceChecker (Department reference validation).
+// Academic (Flow #12) does not exist yet, so the Program existence check is a permissive stub -
+// see StudentModule's own StubProgramExistenceChecker remarks.
+builder.Services.AddStudentModule(builder.Configuration);
 
 // Shared JWT authentication + permission-based authorization (ums-conventions.md: one shared
 // implementation, not per-module reinvention) - every module's protected endpoints gate through
@@ -128,6 +139,7 @@ await app.Services.UseOrganizationModuleAsync();
 await app.Services.UseDocumentsModuleAsync();
 await app.Services.UseNotificationsModuleAsync();
 await app.Services.UseFacultyModuleAsync();
+await app.Services.UseStudentModuleAsync();
 
 app.UseUmsObservability();
 app.UseUmsErrorHandling();
@@ -157,6 +169,7 @@ app.MapOrganizationModule();
 app.MapDocumentsModule();
 app.MapNotificationsModule();
 app.MapFacultyModule();
+app.MapStudentModule();
 
 app.Run();
 
