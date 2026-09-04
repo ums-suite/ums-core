@@ -13,6 +13,9 @@ public interface IUserRepository
 
     public Task<User?> GetByEmailAsync(Email email, CancellationToken cancellationToken = default);
 
+    /// <summary>IDN-12: resolves the User currently holding this reset-token hash as their (single, at-most-one) outstanding <see cref="Users.PasswordResetChallenge"/>.</summary>
+    public Task<User?> GetByPasswordResetTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default);
+
     public Task<IReadOnlyList<User>> ListAsync(int skip, int take, CancellationToken cancellationToken = default);
 
     public Task<int> CountAsync(CancellationToken cancellationToken = default);

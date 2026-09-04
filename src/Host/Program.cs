@@ -76,6 +76,19 @@ builder.Services.AddRateLimiter(options =>
         var partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         return UmsRedisRateLimiterFactory.CreatePartition(redis, "document-verify", partitionKey, permitLimit: 30, window: TimeSpan.FromMinutes(1));
     });
+
+    // IDN-17/requirement-spec.md identity §2/§5: "rate limiting on the login and OTP endpoints
+    // specifically" - the per-source-IP dimension design-decisions.md's "Rate-Limiting / Lockout
+    // Mechanism" names alongside the per-identifier lockout counter Identity's own
+    // IFailedLoginAttemptTracker tracks. Keyed by client IP, same Redis-backed fixed-window
+    // mechanism as document-verify above. Deliberately generous (this coarse per-IP layer exists
+    // to blunt a distributed, many-accounts-from-one-source attack per design-decisions.md's own
+    // framing - genuine credential stuffing runs at a far higher volume than these limits - not to
+    // throttle ordinary traffic from a shared NAT/campus IP, which login sees constantly).
+    AddIdentityIpRateLimitPolicy(options, "identity-login", permitLimit: 100, window: TimeSpan.FromMinutes(1));
+    AddIdentityIpRateLimitPolicy(options, "identity-mfa-verify", permitLimit: 60, window: TimeSpan.FromMinutes(1));
+    AddIdentityIpRateLimitPolicy(options, "identity-password-forgot", permitLimit: 20, window: TimeSpan.FromMinutes(15));
+    AddIdentityIpRateLimitPolicy(options, "identity-password-reset", permitLimit: 20, window: TimeSpan.FromMinutes(15));
 });
 
 // Postgres readiness check today verifies raw connectivity only - each module adds its own
@@ -133,6 +146,17 @@ app.MapDocumentsModule();
 app.MapNotificationsModule();
 
 app.Run();
+
+/// <summary>Per-source-IP fixed-window policy, identical shape to the document-verify policy above - factored out since Identity registers four of these.</summary>
+static void AddIdentityIpRateLimitPolicy(Microsoft.AspNetCore.RateLimiting.RateLimiterOptions options, string policyName, int permitLimit, TimeSpan window)
+{
+    options.AddPolicy(policyName, (HttpContext httpContext) =>
+    {
+        var redis = httpContext.RequestServices.GetRequiredService<IConnectionMultiplexer>();
+        var partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return UmsRedisRateLimiterFactory.CreatePartition(redis, policyName, partitionKey, permitLimit, window);
+    });
+}
 
 /// <summary>Entry point type, exposed for WebApplicationFactory-based integration tests.</summary>
 public partial class Program;

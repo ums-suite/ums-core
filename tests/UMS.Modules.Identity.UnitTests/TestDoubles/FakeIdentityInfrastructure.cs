@@ -34,6 +34,9 @@ internal sealed class FakeUserRepository : IUserRepository
     public Task<User?> GetByEmailAsync(Email email, CancellationToken cancellationToken = default) =>
         Task.FromResult(Users.FirstOrDefault(u => u.Email == email));
 
+    public Task<User?> GetByPasswordResetTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Users.FirstOrDefault(u => u.ResetChallenge?.TokenHash == tokenHash));
+
     public Task<IReadOnlyList<User>> ListAsync(int skip, int take, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<User>>(Users.Skip(skip).Take(take).ToList());
 
@@ -97,6 +100,9 @@ internal sealed class FakeTokenService : ITokenService
     public IssuedAccessToken IssueAccessToken(UserId userId, SessionId sessionId, IReadOnlyCollection<string> roleNames, DateTimeOffset now) =>
         new($"access-token-for-{userId.Value:N}", now.AddMinutes(15));
 
+    public IssuedAccessToken IssueMfaChallengeToken(UserId userId, DateTimeOffset now) =>
+        new($"mfa-challenge-for-{userId.Value:N}", now.AddMinutes(5));
+
     public IssuedRefreshToken IssueRefreshToken(SessionId sessionId, DateTimeOffset now)
     {
         var plaintext = $"{sessionId.Value:N}.secret-{++_refreshCounter}";
@@ -143,6 +149,56 @@ internal sealed class FakeDomainEventRecorder : IDomainEventRecorder
     public List<IDomainEvent> Recorded { get; } = [];
 
     public void Enqueue(IDomainEvent domainEvent) => Recorded.Add(domainEvent);
+}
+
+/// <summary>Deterministic fake - "encrypts" by reversing the byte array, so a test can assert round-tripping without a real key/AES dependency.</summary>
+internal sealed class FakeMfaSecretEncryptor : IMfaSecretEncryptor
+{
+    public string Encrypt(byte[] plaintextSecret) => Convert.ToBase64String(plaintextSecret.Reverse().ToArray());
+
+    public byte[] Decrypt(string cipherText) => Convert.FromBase64String(cipherText).Reverse().ToArray();
+}
+
+/// <summary>Deterministic fake - "verification" is a fixed, known code rather than a real RFC 6238 computation, so tests can assert both the happy and invalid-code paths without real TOTP timing.</summary>
+internal sealed class FakeTotpGenerator : ITotpGenerator
+{
+    public const string ValidCode = "123456";
+
+    public byte[] GenerateSecret() => [1, 2, 3, 4, 5];
+
+    public string BuildOtpAuthUri(byte[] secret, string accountLabel, string issuer) => $"otpauth://totp/{issuer}:{accountLabel}?secret=fake";
+
+    public string EncodeSecretForDisplay(byte[] secret) => "FAKESECRET";
+
+    public bool VerifyCode(byte[] secret, string code) => code == ValidCode;
+}
+
+internal sealed class FakePasswordResetTokenService : IPasswordResetTokenService
+{
+    public (string PlainText, string Hash) IssueToken()
+    {
+        var plainText = $"reset-token-{Guid.NewGuid():N}";
+        return (plainText, Hash(plainText));
+    }
+
+    public string Hash(string plainTextToken) => $"hash-of:{plainTextToken}";
+}
+
+internal sealed class FakeFailedLoginAttemptTracker : IFailedLoginAttemptTracker
+{
+    private readonly Dictionary<string, int> _counts = new(StringComparer.OrdinalIgnoreCase);
+
+    public Task<int> RegisterFailureAsync(string identifier, CancellationToken cancellationToken = default)
+    {
+        _counts[identifier] = _counts.GetValueOrDefault(identifier) + 1;
+        return Task.FromResult(_counts[identifier]);
+    }
+
+    public Task ResetAsync(string identifier, CancellationToken cancellationToken = default)
+    {
+        _counts.Remove(identifier);
+        return Task.CompletedTask;
+    }
 }
 
 /// <summary>

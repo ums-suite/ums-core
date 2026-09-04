@@ -26,8 +26,9 @@ public sealed class JwtTokenService : ITokenService
     private readonly string _issuer;
     private readonly string _audience;
     private readonly IdentityTokenOptions _tokenOptions;
+    private readonly IdentityMfaOptions _mfaOptions;
 
-    public JwtTokenService(IConfiguration configuration, IOptions<IdentityTokenOptions> tokenOptions)
+    public JwtTokenService(IConfiguration configuration, IOptions<IdentityTokenOptions> tokenOptions, IOptions<IdentityMfaOptions> mfaOptions)
     {
         var jwtSection = configuration.GetSection("Jwt");
         var signingKey = jwtSection["SigningKey"]
@@ -40,6 +41,7 @@ public sealed class JwtTokenService : ITokenService
             new SymmetricSecurityKey(Encoding.UTF8.GetBytes(signingKey)),
             SecurityAlgorithms.HmacSha256);
         _tokenOptions = tokenOptions.Value;
+        _mfaOptions = mfaOptions.Value;
     }
 
     public IssuedAccessToken IssueAccessToken(UserId userId, SessionId sessionId, IReadOnlyCollection<string> roleNames, DateTimeOffset now)
@@ -53,6 +55,28 @@ public sealed class JwtTokenService : ITokenService
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
         claims.AddRange(roleNames.Select(role => new Claim(UmsClaimTypes.Roles, role)));
+
+        var token = new JwtSecurityToken(
+            _issuer,
+            _audience,
+            claims,
+            notBefore: now.UtcDateTime,
+            expires: expiresAt.UtcDateTime,
+            signingCredentials: _signingCredentials);
+
+        return new IssuedAccessToken(new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
+    }
+
+    public IssuedAccessToken IssueMfaChallengeToken(UserId userId, DateTimeOffset now)
+    {
+        var expiresAt = now + _mfaOptions.ChallengeTokenLifetime;
+
+        var claims = new List<Claim>
+        {
+            new(UmsClaimTypes.Subject, userId.Value.ToString()),
+            new(UmsClaimTypes.MfaChallenge, "1"),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+        };
 
         var token = new JwtSecurityToken(
             _issuer,

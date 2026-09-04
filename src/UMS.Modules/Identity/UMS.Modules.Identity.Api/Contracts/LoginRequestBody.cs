@@ -10,3 +10,9 @@ public sealed record LoginRequestBody(string Identifier, string Password);
 public sealed record RefreshRequestBody(string RefreshToken);
 
 public sealed record ChangeUserStatusRequestBody(string Status);
+
+public sealed record MfaVerifyRequestBody(string Code);
+
+public sealed record ForgotPasswordRequestBody(string Identifier);
+
+public sealed record ResetPasswordRequestBody(string Token, string NewPassword);

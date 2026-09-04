@@ -75,8 +75,8 @@ public sealed class TokenRefreshService(
         var newRefreshToken = tokenService.IssueRefreshToken(sessionId, now);
         session.Rotate(newRefreshToken.Hash, newRefreshToken.ExpiresAt, now);
 
-        var roleNames = await AuthenticationService.GetActiveRoleNamesAsync(user, roles, cancellationToken).ConfigureAwait(false);
-        var accessToken = tokenService.IssueAccessToken(user.Id, sessionId, roleNames, now);
+        var activeRoles = await AuthenticationService.GetActiveRolesAsync(user, roles, cancellationToken).ConfigureAwait(false);
+        var accessToken = tokenService.IssueAccessToken(user.Id, sessionId, activeRoles.Select(r => r.Name).ToList(), now);
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 

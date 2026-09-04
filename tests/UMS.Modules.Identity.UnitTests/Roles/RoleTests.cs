@@ -38,4 +38,31 @@ public class RoleTests
 
         Assert.Single(role.Permissions);
     }
+
+    [Fact]
+    public void Create_defaults_RequiresMfa_to_false()
+    {
+        var role = Role.Create("Student", null, ["student.profile.read"], _now);
+
+        Assert.False(role.RequiresMfa);
+    }
+
+    [Fact]
+    public void Create_accepts_RequiresMfa_true_for_a_privileged_role()
+    {
+        var role = Role.Create("SuperAdmin", null, ["identity.role.manage"], _now, requiresMfa: true);
+
+        Assert.True(role.RequiresMfa);
+    }
+
+    [Fact]
+    public void SetRequiresMfa_toggles_the_flag_independently_of_Permissions()
+    {
+        var role = Role.Create("Registrar", null, ["identity.user.manage"], _now);
+
+        role.SetRequiresMfa(true);
+
+        Assert.True(role.RequiresMfa);
+        Assert.Contains("identity.user.manage", role.Permissions);
+    }
 }

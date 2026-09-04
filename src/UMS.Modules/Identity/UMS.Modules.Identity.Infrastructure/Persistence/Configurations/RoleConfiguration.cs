@@ -25,5 +25,7 @@ internal sealed class RoleConfiguration : IEntityTypeConfiguration<Role>
             .HasConversion(permissions => permissions.ToArray(), stored => (IReadOnlyList<string>)stored.ToList())
             .HasColumnName("permissions")
             .IsRequired();
+
+        builder.Property(r => r.RequiresMfa).HasColumnName("requires_mfa").IsRequired().HasDefaultValue(false);
     }
 }
