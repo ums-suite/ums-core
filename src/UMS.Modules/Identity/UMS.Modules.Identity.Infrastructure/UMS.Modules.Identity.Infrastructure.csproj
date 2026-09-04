@@ -28,6 +28,7 @@
     <ProjectReference Include="..\UMS.Modules.Identity.Application\UMS.Modules.Identity.Application.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Resilience\UMS.Shared.Resilience.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Authorization\UMS.Shared.Authorization.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Outbox\UMS.Shared.Outbox.csproj" />
   </ItemGroup>
 
 </Project>

@@ -9,6 +9,8 @@
     <Project Path="src/Shared/UMS.Shared.Resilience/UMS.Shared.Resilience.csproj" />
     <Project Path="src/Shared/UMS.Shared.Authorization/UMS.Shared.Authorization.csproj" />
     <Project Path="src/Shared/UMS.Shared.Domain/UMS.Shared.Domain.csproj" />
+    <Project Path="src/Shared/UMS.Shared.Outbox/UMS.Shared.Outbox.csproj" />
+    <Project Path="src/Shared/UMS.Shared.Audit/UMS.Shared.Audit.csproj" />
   </Folder>
   <Folder Name="/src/Workers/">
     <Project Path="src/Workers/UMS.Workers/UMS.Workers.csproj" />
@@ -19,10 +21,18 @@
     <Project Path="src/UMS.Modules/Identity/UMS.Modules.Identity.Infrastructure/UMS.Modules.Identity.Infrastructure.csproj" />
     <Project Path="src/UMS.Modules/Identity/UMS.Modules.Identity.Api/UMS.Modules.Identity.Api.csproj" />
   </Folder>
+  <Folder Name="/src/UMS.Modules/Audit/">
+    <Project Path="src/UMS.Modules/Audit/UMS.Modules.Audit.Domain/UMS.Modules.Audit.Domain.csproj" />
+    <Project Path="src/UMS.Modules/Audit/UMS.Modules.Audit.Application/UMS.Modules.Audit.Application.csproj" />
+    <Project Path="src/UMS.Modules/Audit/UMS.Modules.Audit.Infrastructure/UMS.Modules.Audit.Infrastructure.csproj" />
+    <Project Path="src/UMS.Modules/Audit/UMS.Modules.Audit.Api/UMS.Modules.Audit.Api.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/UMS.Shared.Tests/UMS.Shared.Tests.csproj" />
     <Project Path="tests/UMS.Modules.Identity.UnitTests/UMS.Modules.Identity.UnitTests.csproj" />
     <Project Path="tests/UMS.Modules.Identity.IntegrationTests/UMS.Modules.Identity.IntegrationTests.csproj" />
+    <Project Path="tests/UMS.Modules.Audit.UnitTests/UMS.Modules.Audit.UnitTests.csproj" />
+    <Project Path="tests/UMS.Modules.Audit.IntegrationTests/UMS.Modules.Audit.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/ArchitectureTests/">
     <Project Path="tests/ArchitectureTests/UMS.ArchitectureTests.csproj" />

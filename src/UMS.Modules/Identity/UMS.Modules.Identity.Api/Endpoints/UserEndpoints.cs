@@ -8,6 +8,7 @@ using UMS.Modules.Identity.Domain.Users;
 using UMS.Shared.Authorization;
 using UMS.Shared.ErrorHandling;
 using UMS.Shared.ErrorHandling.Results;
+using UMS.Shared.Observability.Correlation;
 
 namespace UMS.Modules.Identity.Api.Endpoints;
 
@@ -48,7 +49,9 @@ internal static class UserEndpoints
                 return Error.Validation("user.invalid_status", "Status must be 'Active' or 'Suspended'.").ToProblemResult(httpContext);
             }
 
-            var result = await service.ChangeStatusAsync(id, targetStatus, cancellationToken).ConfigureAwait(false);
+            var correlationId = CorrelationIdContext.GetOrCreate(httpContext);
+            var actorIpAddress = httpContext.Connection.RemoteIpAddress?.ToString();
+            var result = await service.ChangeStatusAsync(id, targetStatus, httpContext.User.GetUserId(), actorIpAddress, correlationId, cancellationToken).ConfigureAwait(false);
             return result.Match<IResult>(Results.Ok, error => error.ToProblemResult(httpContext));
         }).RequirePermission(IdentityPermissions.UserManage);
     }

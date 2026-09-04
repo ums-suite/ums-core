@@ -24,6 +24,12 @@ public class PermissionsTests(IdentityApiFixture fixture)
         Assert.Contains(IdentityPermissions.UserRead, keys);
         Assert.Contains(IdentityPermissions.RoleAssign, keys);
         Assert.Contains(IdentityPermissions.SessionRevoke, keys);
-        Assert.All(catalog!, p => Assert.Equal("identity", p.OwningModule));
+
+        // The catalog is shared platform-wide (identity §2/§9.2: "a module-registered manifest") -
+        // once a second module (Audit, release/DEVELOPMENT_PLAN.md Flow #5) registers its own
+        // IPermissionManifest, its entries legitimately appear here too. This assertion is scoped
+        // to Identity's own contribution, not "every entry in the catalog".
+        var identityOwned = catalog!.Where(p => p.Key.StartsWith("identity.", StringComparison.Ordinal));
+        Assert.All(identityOwned, p => Assert.Equal("identity", p.OwningModule));
     }
 }
