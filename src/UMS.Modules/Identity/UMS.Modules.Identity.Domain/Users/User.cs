@@ -64,6 +64,13 @@ public sealed class User : AggregateRoot<UserId>
 
     public DateTimeOffset? SuspendedAt { get; private set; }
 
+    /// <summary>design-decisions.md, "Rate-Limiting / Lockout Mechanism": the durable half of the lockout mechanism - the Redis failed-attempt counter is the ephemeral half (IDN-17).</summary>
+    public DateTimeOffset? LockedOutAt { get; private set; }
+
+    public MfaEnrollment Mfa { get; private set; } = MfaEnrollment.Empty;
+
+    public PasswordResetChallenge? ResetChallenge { get; private set; }
+
     public IReadOnlyCollection<UserRoleAssignment> RoleAssignments => _roleAssignments.AsReadOnly();
 
     /// <summary>
@@ -153,5 +160,53 @@ public sealed class User : AggregateRoot<UserId>
 
         assignment.Revoke(now);
         Raise(new RoleRevoked(Id, assignment.RoleId, assignment.ScopeNode?.Value, now));
+    }
+
+    /// <summary>
+    /// IDN-17: the durable half of account lockout (design-decisions.md, "Rate-Limiting / Lockout
+    /// Mechanism") - idempotent, since a burst of failures crossing the threshold multiple times in
+    /// quick succession must not overwrite an earlier <see cref="LockedOutAt"/> with a later one.
+    /// </summary>
+    public void LockOut(DateTimeOffset now) => LockedOutAt ??= now;
+
+    /// <summary>
+    /// edge-cases.md, "Password reset requested for a locked-out account": a successful reset is
+    /// the account's recovery path, so it always clears any standing lockout as a side effect.
+    /// </summary>
+    public void ClearLockout() => LockedOutAt = null;
+
+    /// <summary>
+    /// IDN-10: begins (or replaces) enrollment (edge-cases.md, "MFA enrollment interrupted
+    /// mid-flow" - "replace-on-new-enroll combined with a 10-minute TTL").
+    /// </summary>
+    public void BeginMfaEnrollment(string pendingSecretCipherText, DateTimeOffset now, TimeSpan pendingSecretLifetime) =>
+        Mfa = Mfa.WithPendingSecret(pendingSecretCipherText, now, pendingSecretLifetime);
+
+    /// <summary>IDN-11: promotes a verified pending secret to the active MFA credential. Caller has already verified the TOTP code against <see cref="MfaEnrollment.PendingSecretCipherText"/>.</summary>
+    public void CompleteMfaEnrollment(DateTimeOffset now)
+    {
+        if (!Mfa.HasUnexpiredPendingSecret(now))
+        {
+            throw new InvalidOperationException("No pending MFA enrollment exists (or it has expired) to complete.");
+        }
+
+        Mfa = Mfa.PromotePendingToEnrolled(now);
+        Raise(new MfaEnrolled(Id, now));
+    }
+
+    /// <summary>IDN-12: issues a new reset challenge, unconditionally replacing any outstanding one (edge-cases.md, "Concurrent password-reset requests" - "issuing a new reset token invalidates all prior outstanding tokens").</summary>
+    public void IssuePasswordResetChallenge(string tokenHash, DateTimeOffset now, TimeSpan tokenLifetime) =>
+        ResetChallenge = new PasswordResetChallenge(tokenHash, now, now + tokenLifetime, null);
+
+    /// <summary>Consumes the outstanding reset challenge if <paramref name="presentedTokenHash"/> matches and it is still usable. Returns false without side effects otherwise - never distinguishes "wrong token" from "no token"/"expired"/"already used" to the caller (identity §5 Security NFR's generic-failure posture).</summary>
+    public bool TryConsumePasswordResetChallenge(string presentedTokenHash, DateTimeOffset now)
+    {
+        if (ResetChallenge is not { } challenge || !challenge.IsUsable(presentedTokenHash, now))
+        {
+            return false;
+        }
+
+        ResetChallenge = challenge.Consumed(now);
+        return true;
     }
 }

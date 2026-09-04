@@ -16,6 +16,10 @@
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.ErrorHandling\UMS.Shared.ErrorHandling.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Authorization\UMS.Shared.Authorization.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Audit\UMS.Shared.Audit.csproj" />
+    <!-- IDN-12: password-reset delivery is exclusively via Notifications' real cross-module
+         contract (release/DEVELOPMENT_PLAN.md Flow #8) - PasswordResetService never emails/SMSes
+         anything itself (ADR-0009). -->
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Notifications\UMS.Shared.Notifications.csproj" />
   </ItemGroup>
 
 </Project>

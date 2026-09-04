@@ -64,12 +64,23 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
 
         services.Configure<IdentityTokenOptions>(configuration.GetSection("Identity:Tokens"));
+        services.Configure<IdentityMfaOptions>(configuration.GetSection("Identity:Mfa"));
+        services.Configure<IdentityLockoutOptions>(configuration.GetSection("Identity:Lockout"));
+        services.Configure<IdentityPasswordResetOptions>(configuration.GetSection("Identity:PasswordReset"));
         services.AddSingleton<ITokenService, JwtTokenService>();
+
+        // IDN-10/11: TOTP secret generation/verification (Otp.NET) and envelope encryption at
+        // rest (design-decisions.md, "MFA Secret Storage") - both stateless, Singleton like the
+        // other crypto ports above.
+        services.AddSingleton<ITotpGenerator, TotpGenerator>();
+        services.AddSingleton<IMfaSecretEncryptor, EnvelopeMfaSecretEncryptor>();
+        services.AddSingleton<IPasswordResetTokenService, PasswordResetTokenService>();
 
         // Shares the platform's one Redis connection (UMS.Shared.Resilience.AddUmsResilience),
         // never a second multiplexer (ADR-0007).
         services.AddScoped<IAuthzCache, RedisAuthzCache>();
         services.AddScoped<IPermissionResolver, IdentityPermissionResolver>();
+        services.AddSingleton<IFailedLoginAttemptTracker, RedisFailedLoginAttemptTracker>();
 
         services.AddSingleton<IPermissionManifest, IdentityPermissionManifest>();
 
@@ -82,6 +93,8 @@ public static class DependencyInjection
         services.AddScoped<TokenRefreshService>();
         services.AddScoped<SessionManagementService>();
         services.AddScoped<PermissionCatalogService>();
+        services.AddScoped<MfaEnrollmentService>();
+        services.AddScoped<PasswordResetService>();
 
         return services;
     }

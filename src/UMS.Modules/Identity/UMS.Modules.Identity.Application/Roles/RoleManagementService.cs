@@ -7,7 +7,7 @@ namespace UMS.Modules.Identity.Application.Roles;
 /// <summary>IDN-14: Role &amp; Permission-bundle management (requirement-spec.md identity §2/§3, §6 `GET/POST /roles`, `PATCH /roles/{id}/permissions`).</summary>
 public sealed class RoleManagementService(IRoleRepository roles, IPermissionCatalogRepository catalog, IUnitOfWork unitOfWork, IClock clock)
 {
-    public static RoleDto ToDto(Role role) => new(role.Id.Value, role.Name, role.Description, role.Permissions, role.CreatedAt);
+    public static RoleDto ToDto(Role role) => new(role.Id.Value, role.Name, role.Description, role.Permissions, role.RequiresMfa, role.CreatedAt);
 
     public async Task<Result<RoleDto>> CreateAsync(CreateRoleRequest request, CancellationToken cancellationToken = default)
     {
@@ -27,7 +27,7 @@ public sealed class RoleManagementService(IRoleRepository roles, IPermissionCata
             return error;
         }
 
-        var role = Role.Create(request.Name, request.Description, request.Permissions, clock.UtcNow);
+        var role = Role.Create(request.Name, request.Description, request.Permissions, clock.UtcNow, request.RequiresMfa);
         roles.Add(role);
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
@@ -55,6 +55,11 @@ public sealed class RoleManagementService(IRoleRepository roles, IPermissionCata
         }
 
         role.SetPermissions(request.Permissions);
+        if (request.RequiresMfa is { } requiresMfa)
+        {
+            role.SetRequiresMfa(requiresMfa);
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         // Every currently-assigned holder of this Role must see the updated bundle on their very

@@ -51,6 +51,8 @@ public sealed class IdentityApiFixture : WebApplicationFactory<Program>, IAsyncL
             ["Identity__Tokens__AccessTokenLifetime"] = "00:15:00",
             ["Identity__Tokens__RefreshTokenLifetime"] = "14.00:00:00",
             ["Identity__Tokens__RefreshReuseGraceWindow"] = "00:00:03",
+            ["Identity__Mfa__MasterKeyBase64"] = "aW50ZWdyYXRpb24tdGVzdC0zMi1ieXRlLWtleSEhISE=",
+            ["Identity__Lockout__MaxFailedAttempts"] = "3",
         };
 
         foreach (var (key, value) in overrides)
