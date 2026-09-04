@@ -43,7 +43,12 @@ public class ModuleBoundaryTests
         {
             var moduleName = ExtractModuleName(assembly.GetName().Name!);
 
-            foreach (var other in moduleAssemblies.Where(a => a != assembly))
+            // Excludes every assembly belonging to THIS SAME module (not just this exact
+            // assembly) - a module's own Api is expected and required to depend on its own
+            // Application/Domain (that dependency is the whole point of an Api layer); the rule
+            // this test enforces is "no OTHER module reaches in", never "no layer within the same
+            // module may depend on another layer of itself".
+            foreach (var other in moduleAssemblies.Where(a => ExtractModuleName(a.GetName().Name!) != moduleName))
             {
                 var result = Types.InAssembly(other)
                     .Should()

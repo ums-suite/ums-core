@@ -9,6 +9,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\UMS.Shared.Observability\UMS.Shared.Observability.csproj" />
+    <ProjectReference Include="..\..\UMS.Modules\Audit\UMS.Modules.Audit.Infrastructure\UMS.Modules.Audit.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\UMS.Modules\Documents\UMS.Modules.Documents.Infrastructure\UMS.Modules.Documents.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

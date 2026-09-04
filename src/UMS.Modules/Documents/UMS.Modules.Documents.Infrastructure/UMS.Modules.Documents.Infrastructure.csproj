@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>UMS.Modules.Documents.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Pinned to 10.0.11 explicitly - same MSB3277 binding-conflict rationale as Identity's and
+         Audit's own Infrastructure projects (see their .csproj comments). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.11" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.11" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.102.4" />
+    <!-- DOC-8/rendering: PDF generation (QuestPDF, Community license - see
+         Rendering/DocumentPdfRenderer.cs remarks for the license reasoning) plus QR-code
+         embedding (QRCoder, MIT). Neither library existed anywhere in ums-core before this
+         module - Documents is the first PDF-producing module (ADR-0010). -->
+    <PackageReference Include="QuestPDF" Version="2025.12.0" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+    <!-- Every external call (S3, in this module) is wrapped in Polly directly (Polly.Core),
+         since AWSSDK.S3 does not go through HttpClientFactory the way UMS.Shared.Resilience's
+         AddUmsResilientHttpClient assumes (ums-conventions.md, Resilience & Reliability). -->
+    <PackageReference Include="Polly.Core" Version="8.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UMS.Modules.Documents.Domain\UMS.Modules.Documents.Domain.csproj" />
+    <ProjectReference Include="..\UMS.Modules.Documents.Application\UMS.Modules.Documents.Application.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Authorization\UMS.Shared.Authorization.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Audit\UMS.Shared.Audit.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Outbox\UMS.Shared.Outbox.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\Fonts\*.ttf" />
+  </ItemGroup>
+
+</Project>

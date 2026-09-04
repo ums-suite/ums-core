@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.14.0" />
+    <PackageReference Include="Testcontainers.Redis" Version="4.14.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Host\UMS.Host.csproj" />
+    <ProjectReference Include="..\..\src\UMS.Modules\Identity\UMS.Modules.Identity.Domain\UMS.Modules.Identity.Domain.csproj" />
+    <ProjectReference Include="..\..\src\UMS.Modules\Identity\UMS.Modules.Identity.Application\UMS.Modules.Identity.Application.csproj" />
+    <ProjectReference Include="..\..\src\UMS.Modules\Identity\UMS.Modules.Identity.Infrastructure\UMS.Modules.Identity.Infrastructure.csproj" />
+    <!-- Flow #6 (Organization) now exists and the Host this fixture boots wires it in - this test
+         project reaches into Organization's own Domain/Application (never Infrastructure
+         internals it doesn't need) purely to seed a real OrganizationNodeId for the ScopeGrant
+         test below, mirroring the same reach-in TestDataSeeder.cs already does for Identity's own
+         repositories. Safe against ADR-0002's own architecture test (ModuleBoundaryTests scans
+         only its own bin output, which never contains a test project's assembly). -->
+    <ProjectReference Include="..\..\src\UMS.Modules\Organization\UMS.Modules.Organization.Domain\UMS.Modules.Organization.Domain.csproj" />
+    <ProjectReference Include="..\..\src\UMS.Modules\Organization\UMS.Modules.Organization.Application\UMS.Modules.Organization.Application.csproj" />
+  </ItemGroup>
+
+</Project>
