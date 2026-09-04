@@ -167,4 +167,25 @@ internal sealed class FakeUnitOfWork : IUnitOfWork
 
         return Task.FromResult(1);
     }
+
+    public Task<IUmsTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IUmsTransaction>(new FakeUmsTransaction());
+}
+
+/// <summary>
+/// A no-op stand-in for a real ADO.NET transaction - no existing unit test drives a scenario that
+/// calls <see cref="IUnitOfWork.BeginTransactionAsync"/> (that path is covered by a real Postgres
+/// transaction in the integration test suite instead), but <see cref="FakeUnitOfWork"/> still needs
+/// a concrete <see cref="IUmsTransaction"/> to satisfy the interface.
+/// </summary>
+internal sealed class FakeUmsTransaction : IUmsTransaction
+{
+    public System.Data.Common.DbTransaction DbTransaction => throw new NotSupportedException(
+        "FakeUmsTransaction has no real underlying transaction - a unit test that needs one should not use FakeUnitOfWork.");
+
+    public Task CommitAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    public Task RollbackAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
