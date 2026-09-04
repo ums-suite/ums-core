@@ -27,12 +27,20 @@
     <Project Path="src/UMS.Modules/Audit/UMS.Modules.Audit.Infrastructure/UMS.Modules.Audit.Infrastructure.csproj" />
     <Project Path="src/UMS.Modules/Audit/UMS.Modules.Audit.Api/UMS.Modules.Audit.Api.csproj" />
   </Folder>
+  <Folder Name="/src/UMS.Modules/Documents/">
+    <Project Path="src/UMS.Modules/Documents/UMS.Modules.Documents.Domain/UMS.Modules.Documents.Domain.csproj" />
+    <Project Path="src/UMS.Modules/Documents/UMS.Modules.Documents.Application/UMS.Modules.Documents.Application.csproj" />
+    <Project Path="src/UMS.Modules/Documents/UMS.Modules.Documents.Infrastructure/UMS.Modules.Documents.Infrastructure.csproj" />
+    <Project Path="src/UMS.Modules/Documents/UMS.Modules.Documents.Api/UMS.Modules.Documents.Api.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/UMS.Shared.Tests/UMS.Shared.Tests.csproj" />
     <Project Path="tests/UMS.Modules.Identity.UnitTests/UMS.Modules.Identity.UnitTests.csproj" />
     <Project Path="tests/UMS.Modules.Identity.IntegrationTests/UMS.Modules.Identity.IntegrationTests.csproj" />
     <Project Path="tests/UMS.Modules.Audit.UnitTests/UMS.Modules.Audit.UnitTests.csproj" />
     <Project Path="tests/UMS.Modules.Audit.IntegrationTests/UMS.Modules.Audit.IntegrationTests.csproj" />
+    <Project Path="tests/UMS.Modules.Documents.UnitTests/UMS.Modules.Documents.UnitTests.csproj" />
+    <Project Path="tests/UMS.Modules.Documents.IntegrationTests/UMS.Modules.Documents.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/ArchitectureTests/">
     <Project Path="tests/ArchitectureTests/UMS.ArchitectureTests.csproj" />

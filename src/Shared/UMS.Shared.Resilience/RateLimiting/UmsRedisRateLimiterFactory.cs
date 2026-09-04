@@ -19,14 +19,21 @@ public static class UmsRedisRateLimiterFactory
         int permitLimit,
         TimeSpan window)
     {
-        return PartitionedRateLimiter.Create<T, string>(item =>
-        {
-            var partitionKey = partitionKeySelector(item);
-            var redisKey = $"ratelimit:{limiterName}:{partitionKey}";
+        return PartitionedRateLimiter.Create<T, string>(item => CreatePartition(redis, limiterName, partitionKeySelector(item), permitLimit, window));
+    }
 
-            return RateLimitPartition.Get(
-                partitionKey,
-                _ => new RedisFixedWindowRateLimiter(redis, redisKey, permitLimit, window));
-        });
+    /// <summary>
+    /// The single-partition building block <see cref="Create{T}"/> itself uses - exposed directly
+    /// for ASP.NET Core's named-policy registration shape
+    /// (<c>RateLimiterOptions.AddPolicy&lt;TPartitionKey&gt;(string, Func&lt;HttpContext,
+    /// RateLimitPartition&lt;TPartitionKey&gt;&gt;)</c>), which needs one
+    /// <see cref="RateLimitPartition{TKey}"/> resolved per request rather than a whole
+    /// pre-built <see cref="PartitionedRateLimiter{T}"/> (Documents' public verify endpoint,
+    /// DOC-9, is this method's first caller).
+    /// </summary>
+    public static RateLimitPartition<string> CreatePartition(IConnectionMultiplexer redis, string limiterName, string partitionKey, int permitLimit, TimeSpan window)
+    {
+        var redisKey = $"ratelimit:{limiterName}:{partitionKey}";
+        return RateLimitPartition.Get(partitionKey, _ => new RedisFixedWindowRateLimiter(redis, redisKey, permitLimit, window));
     }
 }

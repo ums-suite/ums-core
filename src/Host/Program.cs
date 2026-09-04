@@ -1,14 +1,18 @@
 using HealthChecks.NpgSql;
 using HealthChecks.Redis;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using StackExchange.Redis;
 using UMS.Modules.Audit.Api;
 using UMS.Modules.Audit.Infrastructure;
+using UMS.Modules.Documents.Api;
+using UMS.Modules.Documents.Infrastructure;
 using UMS.Modules.Identity.Api;
 using UMS.Modules.Identity.Infrastructure;
 using UMS.Shared.Authorization;
 using UMS.Shared.ErrorHandling;
 using UMS.Shared.Observability;
 using UMS.Shared.Resilience;
+using UMS.Shared.Resilience.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +30,11 @@ builder.Services.AddIdentityModule(builder.Configuration);
 // registered here.
 builder.Services.AddAuditModule(builder.Configuration);
 
+// Documents (release/DEVELOPMENT_PLAN.md Flow #9) - depends only on Identity (module-boundaries.md);
+// calls back into Audit's IAuditRecorder (DOC-14, already registered above) for official-record
+// document types.
+builder.Services.AddDocumentsModule(builder.Configuration);
+
 // Shared JWT authentication + permission-based authorization (ums-conventions.md: one shared
 // implementation, not per-module reinvention) - every module's protected endpoints gate through
 // this, never their own hand-rolled [Authorize] policy.
@@ -33,6 +42,21 @@ builder.Services.AddUmsAuthentication(builder.Configuration);
 builder.Services.AddUmsAuthorization();
 
 builder.Services.AddOpenApi();
+
+// DOC-9: the public verify endpoint is rate-limited per ums-requirements.md §11 - keyed by client
+// IP via a Redis-backed fixed window (ums-conventions.md, Resilience & Reliability: "Redis-backed
+// specifically because ums-core runs N replicas"), registered once here rather than per-module,
+// since ASP.NET Core's rate-limiter middleware/policy registry is itself a single, app-wide
+// composition-root concern (mirrors how authentication/authorization are registered once above).
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("document-verify", (HttpContext httpContext) =>
+    {
+        var redis = httpContext.RequestServices.GetRequiredService<IConnectionMultiplexer>();
+        var partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return UmsRedisRateLimiterFactory.CreatePartition(redis, "document-verify", partitionKey, permitLimit: 30, window: TimeSpan.FromMinutes(1));
+    });
+});
 
 // Postgres readiness check today verifies raw connectivity only - each module adds its own
 // dependency-specific readiness check (ums-conventions.md, Observability) once it exists and owns
@@ -56,6 +80,7 @@ var app = builder.Build();
 // await line here the same way.
 await app.Services.UseIdentityModuleAsync();
 await app.Services.UseAuditModuleAsync();
+await app.Services.UseDocumentsModuleAsync();
 
 app.UseUmsObservability();
 app.UseUmsErrorHandling();
@@ -69,6 +94,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 // Liveness: process is up, no dependency checks - governs whether Kubernetes restarts a wedged
 // pod. Readiness: Postgres + Redis reachable - governs whether Kubernetes routes traffic to this
@@ -80,6 +106,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check 
 // with Identity (release/DEVELOPMENT_PLAN.md Flow #4).
 app.MapIdentityModule();
 app.MapAuditModule();
+app.MapDocumentsModule();
 
 app.Run();
 
