@@ -1,0 +1,8 @@
+# EF Core-generated migration files (InitialCreate.cs, its .Designer.cs, and the model snapshot) -
+# machine-generated boilerplate this repo never hand-edits, so the usual style/analyzer bar this
+# repo otherwise holds every hand-written file to (Directory.Build.props'
+# TreatWarningsAsErrors=true) does not apply here.
+[*.cs]
+dotnet_diagnostic.IDE0161.severity = none
+dotnet_diagnostic.SA1413.severity = none
+dotnet_diagnostic.CA1861.severity = none

@@ -37,6 +37,9 @@
     <ProjectReference Include="..\..\src\UMS.Modules\Identity\UMS.Modules.Identity.Domain\UMS.Modules.Identity.Domain.csproj" />
     <ProjectReference Include="..\..\src\UMS.Modules\Identity\UMS.Modules.Identity.Application\UMS.Modules.Identity.Application.csproj" />
     <ProjectReference Include="..\..\src\UMS.Modules\Identity\UMS.Modules.Identity.Infrastructure\UMS.Modules.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\UMS.Modules\Notifications\UMS.Modules.Notifications.Domain\UMS.Modules.Notifications.Domain.csproj" />
+    <ProjectReference Include="..\..\src\UMS.Modules\Notifications\UMS.Modules.Notifications.Application\UMS.Modules.Notifications.Application.csproj" />
+    <ProjectReference Include="..\..\src\UMS.Modules\Notifications\UMS.Modules.Notifications.Infrastructure\UMS.Modules.Notifications.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

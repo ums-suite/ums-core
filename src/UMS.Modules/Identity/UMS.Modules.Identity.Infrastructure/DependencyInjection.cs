@@ -10,11 +10,13 @@ using UMS.Modules.Identity.Application.Sessions;
 using UMS.Modules.Identity.Application.Users;
 using UMS.Modules.Identity.Infrastructure.Authorization;
 using UMS.Modules.Identity.Infrastructure.Caching;
+using UMS.Modules.Identity.Infrastructure.Notifications;
 using UMS.Modules.Identity.Infrastructure.Organization;
 using UMS.Modules.Identity.Infrastructure.Persistence;
 using UMS.Modules.Identity.Infrastructure.Persistence.Repositories;
 using UMS.Modules.Identity.Infrastructure.Security;
 using UMS.Shared.Authorization;
+using UMS.Shared.Identity;
 
 namespace UMS.Modules.Identity.Infrastructure;
 
@@ -52,6 +54,11 @@ public static class DependencyInjection
         // per-request OrganizationDbContext - see that registration's own remarks in
         // UMS.Modules.Organization.Infrastructure.DependencyInjection.
         services.AddScoped<IOrganizationNodeExistenceChecker, OrganizationNodeExistenceCheckerAdapter>();
+
+        // release/DEVELOPMENT_PLAN.md Flow #8 (Notifications, NTF-2) - the cross-module read path
+        // Notifications resolves to look up a recipient's contact info/language preference, mirroring
+        // this same file's IOrganizationNodeExistenceChecker registration immediately above.
+        services.AddScoped<IRecipientDirectory, RecipientDirectoryAdapter>();
 
         services.Configure<Argon2idOptions>(configuration.GetSection("Identity:Argon2"));
         services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();

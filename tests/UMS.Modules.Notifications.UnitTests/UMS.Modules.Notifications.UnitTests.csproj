@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\UMS.Modules\Notifications\UMS.Modules.Notifications.Domain\UMS.Modules.Notifications.Domain.csproj" />
+    <ProjectReference Include="..\..\src\UMS.Modules\Notifications\UMS.Modules.Notifications.Application\UMS.Modules.Notifications.Application.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Domain\UMS.Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.ErrorHandling\UMS.Shared.ErrorHandling.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Audit\UMS.Shared.Audit.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Identity\UMS.Shared.Identity.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Notifications\UMS.Shared.Notifications.csproj" />
+  </ItemGroup>
+
+</Project>

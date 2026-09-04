@@ -34,6 +34,10 @@
          StubOrganizationNodeExistenceChecker, the same in-process shared-interface pattern
          UMS.Shared.Audit already established. -->
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Organization\UMS.Shared.Organization.csproj" />
+    <!-- Flow #8 (Notifications) - implements UMS.Shared.Identity.IRecipientDirectory
+         (RecipientDirectoryAdapter, below) so Notifications' NTF-2 recipient contact-info/
+         language-preference lookup resolves against real Identity data in-process. -->
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Identity\UMS.Shared.Identity.csproj" />
   </ItemGroup>
 
 </Project>
