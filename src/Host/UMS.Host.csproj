@@ -28,6 +28,8 @@
     -->
     <ProjectReference Include="..\UMS.Modules\Identity\UMS.Modules.Identity.Api\UMS.Modules.Identity.Api.csproj" />
     <ProjectReference Include="..\UMS.Modules\Identity\UMS.Modules.Identity.Infrastructure\UMS.Modules.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Audit\UMS.Modules.Audit.Api\UMS.Modules.Audit.Api.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Audit\UMS.Modules.Audit.Infrastructure\UMS.Modules.Audit.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,8 @@
 using HealthChecks.NpgSql;
 using HealthChecks.Redis;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using UMS.Modules.Audit.Api;
+using UMS.Modules.Audit.Infrastructure;
 using UMS.Modules.Identity.Api;
 using UMS.Modules.Identity.Infrastructure;
 using UMS.Shared.Authorization;
@@ -18,6 +20,11 @@ await builder.Services.AddUmsResilienceAsync(builder.Configuration);
 // Identity (release/DEVELOPMENT_PLAN.md Flow #4) is the first business module - every later
 // module adds its own AddXModule(builder.Configuration) call here the same way.
 builder.Services.AddIdentityModule(builder.Configuration);
+
+// Audit (release/DEVELOPMENT_PLAN.md Flow #5) - depends on no other module (module-boundaries.md);
+// every other module resolves its cross-module write path via UMS.Shared.Audit.IAuditRecorder,
+// registered here.
+builder.Services.AddAuditModule(builder.Configuration);
 
 // Shared JWT authentication + permission-based authorization (ums-conventions.md: one shared
 // implementation, not per-module reinvention) - every module's protected endpoints gate through
@@ -48,6 +55,7 @@ var app = builder.Build();
 // AddIdentityModule's own UseIdentityModuleAsync remarks. Every later module adds its own
 // await line here the same way.
 await app.Services.UseIdentityModuleAsync();
+await app.Services.UseAuditModuleAsync();
 
 app.UseUmsObservability();
 app.UseUmsErrorHandling();
@@ -71,6 +79,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check 
 // src/UMS.Modules/<Module> endpoints register themselves under /api/v1/<module>/..., starting
 // with Identity (release/DEVELOPMENT_PLAN.md Flow #4).
 app.MapIdentityModule();
+app.MapAuditModule();
 
 app.Run();
 

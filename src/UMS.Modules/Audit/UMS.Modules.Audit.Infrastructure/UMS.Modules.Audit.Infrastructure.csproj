@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>UMS.Modules.Audit.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Pinned to 10.0.11 explicitly - same MSB3277 binding-conflict rationale as Identity's own
+         Infrastructure project (see its .csproj comment). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.11" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.11" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.102.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UMS.Modules.Audit.Domain\UMS.Modules.Audit.Domain.csproj" />
+    <ProjectReference Include="..\UMS.Modules.Audit.Application\UMS.Modules.Audit.Application.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Authorization\UMS.Shared.Authorization.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Audit\UMS.Shared.Audit.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Outbox\UMS.Shared.Outbox.csproj" />
+  </ItemGroup>
+
+</Project>
