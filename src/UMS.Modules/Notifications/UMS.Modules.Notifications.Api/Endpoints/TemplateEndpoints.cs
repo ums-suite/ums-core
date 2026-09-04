@@ -22,6 +22,19 @@ internal static class TemplateEndpoints
             return Results.Ok(result);
         });
 
+        // requirement-spec.md §9 Open Questions: templates are "a data-driven, admin-configurable
+        // registry" - this is the create side of that registry (get-or-create by natural key, so a
+        // repeat call for the same (eventType, channel) is idempotent, never a duplicate row). Not
+        // one of §6's two literal endpoint rows, the same kind of narrow, directly-authorized
+        // extension Documents' hard-delete endpoints made for their own module (design-decisions.md
+        // pattern) - without it, PUT /{id}'s "update an existing template's translations" contract
+        // has no way to ever learn a new template's id in the first place.
+        templates.MapPost("/", async (CreateTemplateRequestBody body, HttpContext httpContext, TemplateManagementService service, CancellationToken cancellationToken) =>
+        {
+            var result = await service.GetOrCreateAsync(body.EventType, body.Channel, cancellationToken).ConfigureAwait(false);
+            return result.Match<IResult>(Results.Ok, error => error.ToProblemResult(httpContext));
+        });
+
         templates.MapPut("/{id:guid}", async (Guid id, UpsertTemplateTranslationRequestBody body, HttpContext httpContext, TemplateManagementService service, CancellationToken cancellationToken) =>
         {
             var command = new UpsertTemplateTranslationCommand(body.LanguageCode, body.Subject, body.Body, body.PushTitle, body.DeepLink);

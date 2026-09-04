@@ -91,7 +91,7 @@ public sealed class NotificationDispatchService(
 
         var renderedBody = TemplateRenderer.Render(translation.Body, request.PayloadJson);
         var renderedSubject = translation.Subject is null ? null : TemplateRenderer.Render(translation.Subject, request.PayloadJson);
-        var renderedDeepLink = translation.DeepLink;
+        var renderedDeepLink = translation.DeepLink is null ? null : TemplateRenderer.Render(translation.DeepLink, request.PayloadJson);
 
         if (attempt.Channel == NotificationChannel.InApp)
         {

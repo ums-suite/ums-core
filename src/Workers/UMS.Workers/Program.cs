@@ -3,6 +3,7 @@ using UMS.Modules.Audit.Infrastructure;
 using UMS.Modules.Documents.Infrastructure;
 using UMS.Modules.Identity.Infrastructure;
 using UMS.Modules.Notifications.Infrastructure;
+using UMS.Modules.Organization.Infrastructure;
 using UMS.Shared.Observability;
 using UMS.Shared.Resilience;
 using UMS.Workers;
@@ -35,6 +36,11 @@ builder.Services.AddHostedService<PendingDocumentSweepWorker>();
 // UMS.Shared.Resilience's Redis multiplexer (ADR-0007) - Notifications' OTP rate limiter and every
 // channel provider's Polly-wrapped HttpClient (NTF-9/10/11 + WhatsApp) both need it.
 await builder.Services.AddUmsResilienceAsync(builder.Configuration);
+
+// Organization registered before Identity - Identity.Infrastructure's own DI now resolves
+// UMS.Shared.Organization.IOrganizationNodeExistenceChecker (Flow #6) unconditionally as part of
+// AddIdentityModule, the same real dependency the Host composition root already satisfies.
+builder.Services.AddOrganizationModule(builder.Configuration);
 
 // Identity registered here only so Notifications' own UMS.Shared.Identity.IRecipientDirectory
 // cross-module read path (NTF-2) has a real implementation to resolve in THIS process too - this
@@ -77,6 +83,7 @@ var app = builder.Build();
 // start first (ADR-0001's single physical database).
 await app.Services.UseAuditModuleAsync();
 await app.Services.UseDocumentsModuleAsync();
+await app.Services.UseOrganizationModuleAsync();
 await app.Services.UseIdentityModuleAsync();
 await app.Services.UseNotificationsModuleAsync();
 

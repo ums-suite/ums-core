@@ -61,19 +61,19 @@ public class NotificationDispatchServiceTests
                 NullLogger<NotificationDispatchService>.Instance);
         }
 
-        public (NotificationRequest Request, NotificationDeliveryAttempt Attempt) SeedRequest(NotificationCategory category, NotificationChannel channel = NotificationChannel.Email, string eventType = "PaymentCompleted")
+        public (NotificationRequest Request, NotificationDeliveryAttempt Attempt) SeedRequest(NotificationCategory category, NotificationChannel channel = NotificationChannel.Email, string eventType = "PaymentCompleted", string payloadJson = "{}")
         {
-            var request = NotificationRequest.Create("finance", eventType, "invoice-1", Guid.NewGuid(), category, NotificationPriority.Standard, [channel], "{}", null, _now).Value;
+            var request = NotificationRequest.Create("finance", eventType, "invoice-1", Guid.NewGuid(), category, NotificationPriority.Standard, [channel], payloadJson, null, _now).Value;
             Requests.Add(request);
             var attempt = request.Attempts.Single();
             Attempts.AddRange([attempt]);
             return (request, attempt);
         }
 
-        public void SeedTemplate(string eventType, NotificationChannel channel, string subject = "Subject", string body = "Body")
+        public void SeedTemplate(string eventType, NotificationChannel channel, string subject = "Subject", string body = "Body", string? deepLink = null)
         {
             var template = Template.Create(eventType, channel, _now).Value;
-            template.UpsertTranslation("en", channel == NotificationChannel.InApp ? null : subject, body, channel == NotificationChannel.Push ? "Title" : null, null, _now);
+            template.UpsertTranslation("en", channel == NotificationChannel.InApp ? null : subject, body, channel == NotificationChannel.Push ? "Title" : null, deepLink, _now);
             Templates.Add(template);
         }
     }
@@ -143,6 +143,19 @@ public class NotificationDispatchServiceTests
 
         Assert.Equal(DeliveryAttemptStatus.Delivered, attempt.Status);
         Assert.Equal("You have a new notice.", attempt.RenderedBody);
+    }
+
+    [Fact]
+    public async Task Deep_link_merge_fields_are_rendered_the_same_as_subject_and_body()
+    {
+        var fixture = new Fixture();
+        var (request, attempt) = fixture.SeedRequest(NotificationCategory.Transactional, NotificationChannel.InApp, payloadJson: "{\"applicationId\":\"APP-002\"}");
+        fixture.SeedTemplate(request.EventType, NotificationChannel.InApp, body: "Your application {{applicationId}} has been received.", deepLink: "/applications/{{applicationId}}");
+
+        await fixture.Build().ProcessClaimedAsync(new ClaimedAttempt(attempt.Id.Value, request.Id.Value, 0));
+
+        Assert.Equal(DeliveryAttemptStatus.Delivered, attempt.Status);
+        Assert.Equal("/applications/APP-002", attempt.RenderedDeepLink);
     }
 
     [Fact]

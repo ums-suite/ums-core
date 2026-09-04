@@ -3,14 +3,11 @@ namespace UMS.Modules.Documents.Application.Abstractions;
 /// <summary>
 /// DOC-13: raises a <c>NotificationRequest</c> so the requester's own module doesn't have to poll
 /// for generation completion (requirement-spec.md documents §2/§6/§7; ADR-0009: "never a direct
-/// email/SMS/push call"). Notifications (release/DEVELOPMENT_PLAN.md Flow #8) is being built
-/// concurrently in a separate branch and does not exist yet on this branch - the Infrastructure
-/// implementation registered today is an explicit stub seam, not a real dispatch, mirroring
-/// exactly how Identity originally stubbed <c>IOrganizationNodeExistenceChecker</c> before
-/// Organization (Flow #6) existed (see that interface/its former
-/// <c>StubOrganizationNodeExistenceChecker</c> implementation for the precedent this follows).
-/// Once Notifications lands, this registration is replaced with one that calls Notifications'
-/// real public interface in-process - no other Documents code changes.
+/// email/SMS/push call"). Now that Notifications (release/DEVELOPMENT_PLAN.md Flow #8) exists, the
+/// Infrastructure implementation (<c>NotificationRequestIntakeAdapter</c>) calls Notifications' real
+/// <c>UMS.Shared.Notifications.INotificationRequestIntake</c> in-process - the same "real cross-
+/// module contract, one implementation" pattern Organization's
+/// <c>IOrganizationNodeExistenceChecker</c> established for Flow #6.
 /// </summary>
 public interface INotificationRequestPublisher
 {

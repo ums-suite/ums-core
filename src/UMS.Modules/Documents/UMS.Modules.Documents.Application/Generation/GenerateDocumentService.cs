@@ -167,7 +167,12 @@ public sealed class GenerateDocumentService(
         try
         {
             await notifications.PublishAsync(
-                new NotificationRequest(recipientId, eventType, $"Your {document.DocumentType} is ready.", correlationId),
+                new NotificationRequest(
+                    recipientId,
+                    eventType,
+                    document.Id.Value.ToString(),
+                    new Dictionary<string, string> { ["documentType"] = document.DocumentType.ToString() },
+                    correlationId),
                 cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

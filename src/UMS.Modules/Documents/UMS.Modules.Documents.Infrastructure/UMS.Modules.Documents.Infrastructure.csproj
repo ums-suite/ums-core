@@ -37,6 +37,9 @@
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Authorization\UMS.Shared.Authorization.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Audit\UMS.Shared.Audit.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Outbox\UMS.Shared.Outbox.csproj" />
+    <!-- DOC-13: Flow #8 (Notifications) now exists - NotificationRequestIntakeAdapter implements
+         INotificationRequestPublisher against Notifications' real, shared cross-module contract. -->
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Notifications\UMS.Shared.Notifications.csproj" />
   </ItemGroup>
 
   <ItemGroup>

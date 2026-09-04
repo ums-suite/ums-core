@@ -1,7 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.Extensions.DependencyInjection;
-using UMS.Modules.Notifications.Application.Abstractions;
 using UMS.Modules.Notifications.Application.Templates;
 using UMS.Modules.Notifications.Domain.Common;
 using UMS.Modules.Notifications.IntegrationTests.Infrastructure;
@@ -43,7 +41,7 @@ public class TemplateEndpointsTests(NotificationsApiFixture fixture)
         var accessToken = await TestAuth.LoginAsync(client, adminUsername, adminPassword);
 
         var eventType = $"IntegrationTestEvent-{Guid.NewGuid():N}";
-        var templateId = await CreateTemplateAsync(eventType, NotificationChannel.Email);
+        var templateId = await CreateTemplateAsync(client, accessToken, eventType, NotificationChannel.Email);
 
         var updateBody = new { languageCode = "en", subject = "Welcome", body = "Hello {{name}}", pushTitle = (string?)null, deepLink = (string?)null };
         var updateRequest = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/notifications/templates/{templateId}") { Content = JsonContent.Create(updateBody) }.WithBearerToken(accessToken);
@@ -67,7 +65,7 @@ public class TemplateEndpointsTests(NotificationsApiFixture fixture)
         var accessToken = await TestAuth.LoginAsync(client, adminUsername, adminPassword);
 
         var eventType = $"IntegrationTestEvent-{Guid.NewGuid():N}";
-        var templateId = await CreateTemplateAsync(eventType, NotificationChannel.Email);
+        var templateId = await CreateTemplateAsync(client, accessToken, eventType, NotificationChannel.Email);
 
         var updateBody = new { languageCode = "en", subject = (string?)null, body = "Hello", pushTitle = (string?)null, deepLink = (string?)null };
         var updateRequest = new HttpRequestMessage(HttpMethod.Put, $"/api/v1/notifications/templates/{templateId}") { Content = JsonContent.Create(updateBody) }.WithBearerToken(accessToken);
@@ -76,12 +74,45 @@ public class TemplateEndpointsTests(NotificationsApiFixture fixture)
         Assert.Equal(HttpStatusCode.BadRequest, updateResponse.StatusCode);
     }
 
-    private async Task<Guid> CreateTemplateAsync(string eventType, NotificationChannel channel)
+    [Fact]
+    public async Task Creating_a_template_without_the_template_manage_permission_is_forbidden()
     {
-        using var scope = fixture.Services.CreateScope();
-        var templates = scope.ServiceProvider.GetRequiredService<TemplateManagementService>();
-        var result = await templates.GetOrCreateAsync(eventType, channel);
-        Assert.True(result.IsSuccess);
-        return result.Value.Id;
+        using var client = fixture.CreateClient();
+        var user = await TestUsers.ProvisionAsync(client);
+        var accessToken = await TestAuth.LoginAsync(client, user.Username, TestUsers.DefaultPassword);
+
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/notifications/templates")
+        {
+            Content = JsonContent.Create(new { eventType = "IntegrationTestEvent", channel = NotificationChannel.Email }),
+        }.WithBearerToken(accessToken);
+        var response = await client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Creating_a_template_twice_for_the_same_event_type_and_channel_returns_the_same_row()
+    {
+        using var client = fixture.CreateClient();
+        var (_, adminUsername, adminPassword) = await TestDataSeeder.ProvisionNotificationsAdminAsync(fixture, client);
+        var accessToken = await TestAuth.LoginAsync(client, adminUsername, adminPassword);
+        var eventType = $"IntegrationTestEvent-{Guid.NewGuid():N}";
+
+        var firstId = await CreateTemplateAsync(client, accessToken, eventType, NotificationChannel.Sms);
+        var secondId = await CreateTemplateAsync(client, accessToken, eventType, NotificationChannel.Sms);
+
+        Assert.Equal(firstId, secondId);
+    }
+
+    private static async Task<Guid> CreateTemplateAsync(HttpClient client, string accessToken, string eventType, NotificationChannel channel)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/v1/notifications/templates")
+        {
+            Content = JsonContent.Create(new { eventType, channel }),
+        }.WithBearerToken(accessToken);
+        var response = await client.SendAsync(request);
+        response.EnsureSuccessStatusCode();
+        var dto = await response.Content.ReadFromJsonAsync<TemplateDto>();
+        return dto!.Id;
     }
 }

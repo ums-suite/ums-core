@@ -25,6 +25,12 @@ public static class NotificationEventCatalog
         ["HostelAllocation"] = new(NotificationCategory.Transactional, NotificationPriority.Standard, [NotificationChannel.Email, NotificationChannel.Sms, NotificationChannel.InApp]),
         ["LeaveApproval"] = new(NotificationCategory.Transactional, NotificationPriority.Standard, [NotificationChannel.InApp, NotificationChannel.Email]),
 
+        // Documents (release/DEVELOPMENT_PLAN.md Flow #9, DOC-13) - its first real cross-module
+        // publisher, wired via NotificationRequestIntakeAdapter.
+        ["DocumentGenerated"] = new(NotificationCategory.Transactional, NotificationPriority.Standard, [NotificationChannel.Email, NotificationChannel.InApp]),
+        ["DocumentGenerationFailed"] = new(NotificationCategory.Transactional, NotificationPriority.Standard, [NotificationChannel.Email, NotificationChannel.InApp]),
+        ["BulkDocumentGenerationCompleted"] = new(NotificationCategory.Transactional, NotificationPriority.Standard, [NotificationChannel.Email, NotificationChannel.InApp]),
+
         // §9 Decision 4: OTP/security-alert messages get an expedited priority lane, ahead of bulk/
         // informational sends - WhatsApp included per §9 Open Questions ("a first-class delivery
         // channel for urgent/OTP-class messages").
