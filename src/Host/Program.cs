@@ -6,6 +6,8 @@ using UMS.Modules.Audit.Api;
 using UMS.Modules.Audit.Infrastructure;
 using UMS.Modules.Documents.Api;
 using UMS.Modules.Documents.Infrastructure;
+using UMS.Modules.Faculty.Api;
+using UMS.Modules.Faculty.Infrastructure;
 using UMS.Modules.Identity.Api;
 using UMS.Modules.Identity.Infrastructure;
 using UMS.Modules.Notifications.Api;
@@ -54,6 +56,15 @@ builder.Services.AddDocumentsModule(builder.Configuration);
 // UMS.Shared.Notifications.INotificationRequestIntake cross-module call against this module's real
 // implementation, registered here.
 builder.Services.AddNotificationsModule(builder.Configuration);
+
+// Faculty (release/DEVELOPMENT_PLAN.md Flow #10) - depends on Identity + Organization
+// (module-boundaries.md): registered after both, resolving
+// UMS.Shared.Organization.IOrganizationNodeExistenceChecker (registered above) for Department
+// reference validation and UMS.Shared.Notifications.INotificationRequestIntake (registered above)
+// for LeaveApproved/LeaveRejected fan-out. Organization's own former StubFacultyEmploymentChecker
+// registration now resolves UMS.Shared.Faculty.IFacultyEmploymentChecker instead - see
+// Organization.Infrastructure's own DependencyInjection.cs.
+builder.Services.AddFacultyModule(builder.Configuration);
 
 // Shared JWT authentication + permission-based authorization (ums-conventions.md: one shared
 // implementation, not per-module reinvention) - every module's protected endpoints gate through
@@ -116,6 +127,7 @@ await app.Services.UseAuditModuleAsync();
 await app.Services.UseOrganizationModuleAsync();
 await app.Services.UseDocumentsModuleAsync();
 await app.Services.UseNotificationsModuleAsync();
+await app.Services.UseFacultyModuleAsync();
 
 app.UseUmsObservability();
 app.UseUmsErrorHandling();
@@ -144,6 +156,7 @@ app.MapAuditModule();
 app.MapOrganizationModule();
 app.MapDocumentsModule();
 app.MapNotificationsModule();
+app.MapFacultyModule();
 
 app.Run();
 

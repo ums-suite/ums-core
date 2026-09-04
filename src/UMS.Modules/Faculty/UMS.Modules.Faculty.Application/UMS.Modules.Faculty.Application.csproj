@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>UMS.Modules.Faculty.Application</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UMS.Modules.Faculty.Domain\UMS.Modules.Faculty.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.ErrorHandling\UMS.Shared.ErrorHandling.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Audit\UMS.Shared.Audit.csproj" />
+  </ItemGroup>
+
+</Project>

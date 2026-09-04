@@ -40,6 +40,11 @@
          as its own cross-module read/write paths, both already registered above. -->
     <ProjectReference Include="..\UMS.Modules\Notifications\UMS.Modules.Notifications.Api\UMS.Modules.Notifications.Api.csproj" />
     <ProjectReference Include="..\UMS.Modules\Notifications\UMS.Modules.Notifications.Infrastructure\UMS.Modules.Notifications.Infrastructure.csproj" />
+
+    <!-- Faculty (release/DEVELOPMENT_PLAN.md Flow #10) - depends on Identity + Organization
+         (module-boundaries.md), both already registered above. -->
+    <ProjectReference Include="..\UMS.Modules\Faculty\UMS.Modules.Faculty.Api\UMS.Modules.Faculty.Api.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Faculty\UMS.Modules.Faculty.Infrastructure\UMS.Modules.Faculty.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
