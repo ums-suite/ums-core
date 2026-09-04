@@ -1,5 +1,7 @@
+using System.Data.Common;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
 using UMS.Modules.Identity.Application.Abstractions;
 using UMS.Modules.Identity.Domain.Common;
@@ -7,7 +9,7 @@ using UMS.Modules.Identity.Domain.Permissions;
 using UMS.Modules.Identity.Domain.Roles;
 using UMS.Modules.Identity.Domain.Sessions;
 using UMS.Modules.Identity.Domain.Users;
-using UMS.Modules.Identity.Infrastructure.Outbox;
+using UMS.Shared.Outbox;
 
 namespace UMS.Modules.Identity.Infrastructure.Persistence;
 
@@ -36,6 +38,12 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
     internal DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     public void Enqueue(IDomainEvent domainEvent) => _recordedEvents.Add(domainEvent);
+
+    public async Task<IUmsTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        var transaction = await Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+        return new EfUmsTransaction(transaction);
+    }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -127,5 +135,17 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
         }
 
         _recordedEvents.Clear();
+    }
+
+    /// <summary>Adapts EF Core's <see cref="IDbContextTransaction"/> to the Application layer's own, EF-agnostic <see cref="IUmsTransaction"/> port.</summary>
+    private sealed class EfUmsTransaction(IDbContextTransaction transaction) : IUmsTransaction
+    {
+        public DbTransaction DbTransaction => transaction.GetDbTransaction();
+
+        public Task CommitAsync(CancellationToken cancellationToken = default) => transaction.CommitAsync(cancellationToken);
+
+        public Task RollbackAsync(CancellationToken cancellationToken = default) => transaction.RollbackAsync(cancellationToken);
+
+        public ValueTask DisposeAsync() => transaction.DisposeAsync();
     }
 }

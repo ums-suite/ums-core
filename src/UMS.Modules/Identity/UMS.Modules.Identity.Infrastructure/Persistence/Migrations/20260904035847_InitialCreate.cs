@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -26,7 +26,10 @@ namespace UMS.Modules.Identity.Infrastructure.Persistence.Migrations
                     event_type = table.Column<string>(type: "text", nullable: false),
                     payload_json = table.Column<string>(type: "jsonb", nullable: false),
                     occurred_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    recorded_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    recorded_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    processed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    attempt_count = table.Column<int>(type: "integer", nullable: false),
+                    last_error = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
