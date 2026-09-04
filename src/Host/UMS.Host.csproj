@@ -45,6 +45,12 @@
          (module-boundaries.md), both already registered above. -->
     <ProjectReference Include="..\UMS.Modules\Faculty\UMS.Modules.Faculty.Api\UMS.Modules.Faculty.Api.csproj" />
     <ProjectReference Include="..\UMS.Modules\Faculty\UMS.Modules.Faculty.Infrastructure\UMS.Modules.Faculty.Infrastructure.csproj" />
+
+    <!-- Student — Core (release/DEVELOPMENT_PLAN.md Flow #11) - depends on Identity, Organization,
+         Documents, and Notifications, all already registered above, for its real STU-2/3/4
+         cross-module side effects. -->
+    <ProjectReference Include="..\UMS.Modules\Student\UMS.Modules.Student.Api\UMS.Modules.Student.Api.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Student\UMS.Modules.Student.Infrastructure\UMS.Modules.Student.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

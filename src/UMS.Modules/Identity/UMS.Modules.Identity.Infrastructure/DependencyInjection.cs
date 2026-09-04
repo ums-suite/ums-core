@@ -60,6 +60,10 @@ public static class DependencyInjection
         // this same file's IOrganizationNodeExistenceChecker registration immediately above.
         services.AddScoped<IRecipientDirectory, RecipientDirectoryAdapter>();
 
+        // release/DEVELOPMENT_PLAN.md Flow #11 (Student, STU-2) - the cross-module write path
+        // Student resolves to provision a login-capable User as a side effect of CreateStudentRecord.
+        services.AddScoped<IUserProvisioner, UMS.Modules.Identity.Infrastructure.Student.UserProvisionerAdapter>();
+
         services.Configure<Argon2idOptions>(configuration.GetSection("Identity:Argon2"));
         services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
 

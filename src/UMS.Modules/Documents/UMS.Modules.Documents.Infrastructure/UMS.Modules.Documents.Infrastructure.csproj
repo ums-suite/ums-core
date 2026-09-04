@@ -40,6 +40,7 @@
     <!-- DOC-13: Flow #8 (Notifications) now exists - NotificationRequestIntakeAdapter implements
          INotificationRequestPublisher against Notifications' real, shared cross-module contract. -->
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Notifications\UMS.Shared.Notifications.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Documents\UMS.Shared.Documents.csproj" />
   </ItemGroup>
 
   <ItemGroup>
