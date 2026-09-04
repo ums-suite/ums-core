@@ -1,8 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
 using UMS.Modules.Identity.Application.Permissions;
 using UMS.Modules.Identity.Application.Roles;
 using UMS.Modules.Identity.IntegrationTests.Infrastructure;
+using UMS.Modules.Organization.Application.Abstractions;
+using UMS.Modules.Organization.Domain.Universities;
 
 namespace UMS.Modules.Identity.IntegrationTests.Roles;
 
@@ -26,27 +29,43 @@ public class RoleAssignmentTests(IdentityApiFixture fixture)
     }
 
     [Fact]
-    public async Task Assigning_a_role_with_a_ScopeGrant_organization_node_succeeds_against_todays_stub_checker()
+    public async Task Assigning_a_role_with_a_ScopeGrant_organization_node_validates_against_the_real_Organization_module()
     {
         // requirement-spec.md identity §7: Identity resolves ScopeGrant existence via
-        // Organization's own read interface - Organization doesn't exist yet (release/
-        // DEVELOPMENT_PLAN.md Flow #6), so StubOrganizationNodeExistenceChecker accepts every
-        // OrganizationNodeId as existing (see its own remarks). This test documents that current,
-        // honest behavior; RoleAssignmentServiceTests (unit tests) cover the REJECTION branch
-        // against a fake checker returning false, proving RoleAssignmentService's own handling of
-        // that outcome without depending on Organization's not-yet-built real implementation.
+        // Organization's own read interface. Organization now exists (release/DEVELOPMENT_PLAN.md
+        // Flow #6) - the former StubOrganizationNodeExistenceChecker's "everything exists"
+        // behavior is replaced by a real check against Organization's own tables (see
+        // UMS.Modules.Identity.Infrastructure.Organization.OrganizationNodeExistenceCheckerAdapter).
+        // A real OrganizationNodeId is accepted; a fabricated one is now correctly rejected -
+        // this closes the gap this test itself used to document as "today's stub checker."
         using var client = fixture.CreateClient();
         var (_, adminUsername, adminPassword, _) = await TestDataSeeder.ProvisionAdminAsync(fixture, client);
         var admin = await TestUsers.LoginAsync(client, adminUsername, adminPassword);
-        var user = await TestUsers.ProvisionAsync(client);
         var role = await CreateRoleAsync(client, admin.AccessToken, [IdentityPermissions.UserRead]);
 
-        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, $"/api/v1/identity/users/{user.Id}/roles")
+        // Seeds a real University directly through Organization's own repository port (never a
+        // DbContext directly) - mirrors TestDataSeeder.cs's own reach-in for Identity's own
+        // repositories.
+        using var scope = fixture.Services.CreateScope();
+        var universities = scope.ServiceProvider.GetRequiredService<IUniversityRepository>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var university = University.Create($"Test University {Guid.NewGuid():N}", null, DateTimeOffset.UtcNow);
+        universities.Add(university);
+        await unitOfWork.SaveChangesAsync();
+
+        var realNodeUser = await TestUsers.ProvisionAsync(client);
+        var realNodeResponse = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, $"/api/v1/identity/users/{realNodeUser.Id}/roles")
+        {
+            Content = JsonContent.Create(new AssignRoleRequest(role.Id, university.Id.Value)),
+        }.WithBearerToken(admin.AccessToken));
+        Assert.Equal(HttpStatusCode.OK, realNodeResponse.StatusCode);
+
+        var fakeNodeUser = await TestUsers.ProvisionAsync(client);
+        var fakeNodeResponse = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, $"/api/v1/identity/users/{fakeNodeUser.Id}/roles")
         {
             Content = JsonContent.Create(new AssignRoleRequest(role.Id, Guid.NewGuid())),
         }.WithBearerToken(admin.AccessToken));
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, fakeNodeResponse.StatusCode);
     }
 
     [Fact]

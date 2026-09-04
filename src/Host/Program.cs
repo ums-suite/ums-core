@@ -5,6 +5,8 @@ using UMS.Modules.Audit.Api;
 using UMS.Modules.Audit.Infrastructure;
 using UMS.Modules.Identity.Api;
 using UMS.Modules.Identity.Infrastructure;
+using UMS.Modules.Organization.Api;
+using UMS.Modules.Organization.Infrastructure;
 using UMS.Shared.Authorization;
 using UMS.Shared.ErrorHandling;
 using UMS.Shared.Observability;
@@ -25,6 +27,13 @@ builder.Services.AddIdentityModule(builder.Configuration);
 // every other module resolves its cross-module write path via UMS.Shared.Audit.IAuditRecorder,
 // registered here.
 builder.Services.AddAuditModule(builder.Configuration);
+
+// Organization (release/DEVELOPMENT_PLAN.md Flow #6) - depends only on Identity for its own
+// endpoint authz (module-boundaries.md); other modules resolve its cross-module read path via
+// UMS.Shared.Organization.IOrganizationNodeExistenceChecker, registered here (Identity's own
+// former stub registration now resolves this instead - see Identity.Infrastructure's
+// DependencyInjection.cs).
+builder.Services.AddOrganizationModule(builder.Configuration);
 
 // Shared JWT authentication + permission-based authorization (ums-conventions.md: one shared
 // implementation, not per-module reinvention) - every module's protected endpoints gate through
@@ -56,6 +65,7 @@ var app = builder.Build();
 // await line here the same way.
 await app.Services.UseIdentityModuleAsync();
 await app.Services.UseAuditModuleAsync();
+await app.Services.UseOrganizationModuleAsync();
 
 app.UseUmsObservability();
 app.UseUmsErrorHandling();
@@ -80,6 +90,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check 
 // with Identity (release/DEVELOPMENT_PLAN.md Flow #4).
 app.MapIdentityModule();
 app.MapAuditModule();
+app.MapOrganizationModule();
 
 app.Run();
 
