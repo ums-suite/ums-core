@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\Shared\UMS.Shared.ErrorHandling\UMS.Shared.ErrorHandling.csproj" />
     <ProjectReference Include="..\..\src\Shared\UMS.Shared.Resilience\UMS.Shared.Resilience.csproj" />
     <ProjectReference Include="..\..\src\Shared\UMS.Shared.Observability\UMS.Shared.Observability.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Domain\UMS.Shared.Domain.csproj" />
   </ItemGroup>
 
 </Project>
