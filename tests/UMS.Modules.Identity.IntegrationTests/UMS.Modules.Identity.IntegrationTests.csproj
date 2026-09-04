@@ -15,6 +15,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.11" />
     <PackageReference Include="Testcontainers.PostgreSql" Version="4.14.0" />
     <PackageReference Include="Testcontainers.Redis" Version="4.14.0" />
+    <!-- IDN-10/11: computes a real, valid TOTP code from an enrollment response's SecretBase32 -
+         exactly what a real authenticator app would do - so these tests exercise real RFC 6238
+         verification end to end rather than mocking it. -->
+    <PackageReference Include="Otp.NET" Version="1.4.0" />
   </ItemGroup>
 
   <ItemGroup>

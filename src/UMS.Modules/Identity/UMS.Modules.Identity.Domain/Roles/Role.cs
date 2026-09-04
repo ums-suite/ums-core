@@ -30,14 +30,17 @@ public sealed class Role : AggregateRoot<RoleId>
 
     public IReadOnlyList<string> Permissions { get; private set; } = [];
 
-    public static Role Create(string name, string? description, IEnumerable<string> permissionKeys, DateTimeOffset now)
+    /// <summary>IDN-16: requirement-spec.md identity §2 "MFA is mandatory for a configurable set of privileged roles" - this Role's Permissions never resolve as granted for a holder without a verified MFA enrollment (§4 "MFA cannot be silently downgraded").</summary>
+    public bool RequiresMfa { get; private set; }
+
+    public static Role Create(string name, string? description, IEnumerable<string> permissionKeys, DateTimeOffset now, bool requiresMfa = false)
     {
         if (string.IsNullOrWhiteSpace(name))
         {
             throw new ArgumentException("Role name is required.", nameof(name));
         }
 
-        var role = new Role(RoleId.New(), name.Trim(), description?.Trim(), now);
+        var role = new Role(RoleId.New(), name.Trim(), description?.Trim(), now) { RequiresMfa = requiresMfa };
         role.SetPermissions(permissionKeys);
         return role;
     }
@@ -45,4 +48,6 @@ public sealed class Role : AggregateRoot<RoleId>
     /// <summary>Replaces the entire Permission bundle - never a partial add, so the Role's effective grant is always exactly what the last write said (requirement-spec.md identity §6).</summary>
     public void SetPermissions(IEnumerable<string> permissionKeys) =>
         Permissions = permissionKeys.Where(k => !string.IsNullOrWhiteSpace(k)).Distinct(StringComparer.Ordinal).ToList();
+
+    public void SetRequiresMfa(bool requiresMfa) => RequiresMfa = requiresMfa;
 }

@@ -47,6 +47,7 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Status).HasColumnName("status").HasConversion<string>().IsRequired();
         builder.Property(u => u.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(u => u.SuspendedAt).HasColumnName("suspended_at");
+        builder.Property(u => u.LockedOutAt).HasColumnName("locked_out_at");
 
         builder.OwnsOne(u => u.Name, name =>
         {
@@ -64,6 +65,25 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
             credential.Property(c => c.ChangedAt).HasColumnName("password_changed_at").IsRequired();
         });
         builder.Navigation(u => u.Credential).IsRequired();
+
+        builder.OwnsOne(u => u.Mfa, mfa =>
+        {
+            mfa.Property(m => m.PendingSecretCipherText).HasColumnName("mfa_pending_secret_cipher_text");
+            mfa.Property(m => m.PendingCreatedAt).HasColumnName("mfa_pending_created_at");
+            mfa.Property(m => m.PendingExpiresAt).HasColumnName("mfa_pending_expires_at");
+            mfa.Property(m => m.EnrolledSecretCipherText).HasColumnName("mfa_enrolled_secret_cipher_text");
+            mfa.Property(m => m.EnrolledAt).HasColumnName("mfa_enrolled_at");
+        });
+        builder.Navigation(u => u.Mfa).IsRequired();
+
+        builder.OwnsOne(u => u.ResetChallenge, reset =>
+        {
+            reset.Property(r => r.TokenHash).HasColumnName("password_reset_token_hash");
+            reset.Property(r => r.CreatedAt).HasColumnName("password_reset_created_at");
+            reset.Property(r => r.ExpiresAt).HasColumnName("password_reset_expires_at");
+            reset.Property(r => r.ConsumedAt).HasColumnName("password_reset_consumed_at");
+            reset.HasIndex(r => r.TokenHash).HasDatabaseName("ix_users_password_reset_token_hash");
+        });
 
         builder.OwnsMany(u => u.RoleAssignments, assignment =>
         {

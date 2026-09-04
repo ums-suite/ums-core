@@ -12,6 +12,16 @@ public interface ITokenService
 {
     public IssuedAccessToken IssueAccessToken(UserId userId, SessionId sessionId, IReadOnlyCollection<string> roleNames, DateTimeOffset now);
 
+    /// <summary>
+    /// IDN-11: a short-lived, narrowly-scoped token issued mid-login when an active Role requires
+    /// MFA - carries only <c>sub</c> and a distinguishing "mfa challenge" claim, never <c>sid</c>/
+    /// <c>roles</c> (no real Session exists yet). Valid only against <c>POST /auth/mfa/enroll</c>/
+    /// <c>verify</c>, never any other protected endpoint (design-decisions.md's shared-middleware
+    /// convention still authenticates it; those two endpoints are the only ones that treat its
+    /// distinguishing claim as sufficient in place of a live Session).
+    /// </summary>
+    public IssuedAccessToken IssueMfaChallengeToken(UserId userId, DateTimeOffset now);
+
     /// <summary>Plaintext shape embeds the SessionId as a lookup prefix so refresh never has to scan-by-hash (design-decisions.md, "Token/Session Storage &amp; Rotation Mechanism").</summary>
     public IssuedRefreshToken IssueRefreshToken(SessionId sessionId, DateTimeOffset now);
 

@@ -14,6 +14,9 @@ internal sealed class UserRepository(IdentityDbContext context) : IUserRepositor
     public Task<User?> GetByEmailAsync(Email email, CancellationToken cancellationToken = default) =>
         context.Users.Include(u => u.RoleAssignments).FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
 
+    public Task<User?> GetByPasswordResetTokenHashAsync(string tokenHash, CancellationToken cancellationToken = default) =>
+        context.Users.Include(u => u.RoleAssignments).FirstOrDefaultAsync(u => u.ResetChallenge!.TokenHash == tokenHash, cancellationToken);
+
     /// <summary>
     /// Resolves username, email, mobile, or university id in one query (requirement-spec.md
     /// identity §2). Every column is <c>citext</c> (case-insensitive) except <see cref="Email"/>/
