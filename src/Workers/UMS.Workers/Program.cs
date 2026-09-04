@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using UMS.Modules.Audit.Infrastructure;
 using UMS.Modules.Documents.Infrastructure;
+using UMS.Modules.Faculty.Infrastructure;
 using UMS.Modules.Identity.Infrastructure;
 using UMS.Modules.Notifications.Infrastructure;
 using UMS.Modules.Organization.Infrastructure;
@@ -9,6 +10,7 @@ using UMS.Shared.Resilience;
 using UMS.Workers;
 using UMS.Workers.AuditExports;
 using UMS.Workers.BulkDocumentGeneration;
+using UMS.Workers.Faculty;
 using UMS.Workers.Notifications;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -61,6 +63,15 @@ builder.Services.AddHostedService<WhatsAppDispatchWorker>();
 builder.Services.AddHostedService<PushDispatchWorker>();
 builder.Services.AddHostedService<InAppDispatchWorker>();
 
+// Faculty (release/DEVELOPMENT_PLAN.md Flow #10) - the CourseAssignment projection relay (FAC-4)
+// and the LeaveApproved/LeaveRejected notification relay (FAC-12), mirroring Documents' own two
+// relay registrations immediately above. Depends on Organization (registered above) for
+// UMS.Shared.Organization.IOrganizationNodeExistenceChecker and on Notifications (registered
+// above) for UMS.Shared.Notifications.INotificationRequestIntake.
+builder.Services.AddFacultyModule(builder.Configuration);
+builder.Services.AddHostedService<CourseAssignmentProjectionRelayWorker>();
+builder.Services.AddHostedService<LeaveNotificationRelayWorker>();
+
 // Same readiness contract as UMS.Host (ums-conventions.md, Observability: "UMS.Workers exposes
 // the same two endpoints"). Per-job outbox/queue-depth checks (ADR-0014) are added once the first
 // real worker (module-owned outbox relay) exists.
@@ -86,6 +97,7 @@ await app.Services.UseDocumentsModuleAsync();
 await app.Services.UseOrganizationModuleAsync();
 await app.Services.UseIdentityModuleAsync();
 await app.Services.UseNotificationsModuleAsync();
+await app.Services.UseFacultyModuleAsync();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });

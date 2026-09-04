@@ -54,9 +54,12 @@ public static class DependencyInjection
 
         services.AddSingleton<IClock, SystemClock>();
 
-        // EXPLICIT SEAMS - Faculty (Flow #10)/Hostel (Flow #19)/Academic (Flow #12) don't exist
-        // yet. See each stub's own remarks.
-        services.AddScoped<IFacultyEmploymentChecker, StubFacultyEmploymentChecker>();
+        // Faculty (Flow #10) now exists - the former StubFacultyEmploymentChecker is replaced by a
+        // real adapter onto UMS.Shared.Faculty.IFacultyEmploymentChecker (see
+        // FacultyEmploymentCheckerAdapter's own remarks).
+        services.AddScoped<IFacultyEmploymentChecker, FacultyEmploymentCheckerAdapter>();
+
+        // EXPLICIT SEAM - Hostel (Flow #19) doesn't exist yet. See the stub's own remarks.
         services.AddScoped<IRoomReferenceChecker, StubRoomReferenceChecker>();
 
         // The REAL cross-module implementation Identity's own former stub
