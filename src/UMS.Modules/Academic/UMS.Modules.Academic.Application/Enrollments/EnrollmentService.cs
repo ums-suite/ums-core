@@ -127,9 +127,13 @@ public sealed class EnrollmentService(
         }
 
         // --- Check 3: timetable-conflict gate ----------------------------------------------------
-        foreach (var existing in activeEnrollments)
+        // A pre-existing Active Enrollment for the SAME CourseOffering (a duplicate/double-click
+        // resubmission, edge-cases.md's own named case) is never itself a "conflict" - its Section
+        // trivially overlaps itself. That case is handled by the unique-constraint-backed
+        // idempotent-return path below, not by this gate.
+        foreach (var existing in activeEnrollments.Where(e => e.CourseOfferingId != offering.Id.Value))
         {
-            var existingOffering = existing.CourseOfferingId == offering.Id.Value ? offering : await offerings.GetByIdAsync(new CourseOfferingId(existing.CourseOfferingId), cancellationToken).ConfigureAwait(false);
+            var existingOffering = await offerings.GetByIdAsync(new CourseOfferingId(existing.CourseOfferingId), cancellationToken).ConfigureAwait(false);
             var existingSection = existingOffering?.Sections.FirstOrDefault(s => s.Id.Value == existing.SectionId);
             if (existingSection is not null && existingSection.Schedule.OverlapsWith(section.Schedule))
             {

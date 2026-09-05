@@ -21,7 +21,7 @@ public sealed class AttendanceEndpointsTests(AcademicApiFixture fixture)
         var course = await AcademicTestDataSeeder.SeedCourseAsync(client, adminToken);
         var (_, semesterId) = await AcademicTestDataSeeder.SeedOpenSemesterAsync(client, adminToken);
         var offering = await AcademicTestDataSeeder.SeedCourseOfferingAsync(client, adminToken, course.Id, semesterId, departmentId, capacity: 5);
-        var (facultyMemberId, _, instructorToken) = await AcademicTestDataSeeder.SeedFacultyMemberAsync(client, adminToken, departmentId, designationId);
+        var (facultyMemberId, _, instructorToken) = await AcademicTestDataSeeder.SeedFacultyMemberAsync(fixture, client, adminToken, departmentId, designationId);
         (await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, $"/api/v1/academic/course-offerings/{offering.Id}/instructor") { Content = JsonContent.Create(new AssignInstructorRequest(facultyMemberId)) }.WithBearerToken(adminToken))).EnsureSuccessStatusCode();
 
         var (_, studentToken) = await AcademicTestDataSeeder.SeedActiveStudentAsync(fixture, client, departmentId, program.Id);
@@ -55,7 +55,7 @@ public sealed class AttendanceEndpointsTests(AcademicApiFixture fixture)
         var (client, adminToken, _, courseOfferingId, enrollmentId) = await SeedAsync();
         var departmentId = await AcademicTestDataSeeder.SeedDepartmentAsync(client, adminToken);
         var designationId = await AcademicTestDataSeeder.SeedDesignationAsync(client, adminToken);
-        var (_, _, otherFacultyToken) = await AcademicTestDataSeeder.SeedFacultyMemberAsync(client, adminToken, departmentId, designationId);
+        var (_, _, otherFacultyToken) = await AcademicTestDataSeeder.SeedFacultyMemberAsync(fixture, client, adminToken, departmentId, designationId);
 
         var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/api/v1/academic/attendance")
         {

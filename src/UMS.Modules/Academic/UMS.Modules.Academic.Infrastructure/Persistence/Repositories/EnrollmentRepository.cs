@@ -23,14 +23,19 @@ internal sealed class EnrollmentRepository(AcademicDbContext context) : IEnrollm
 
     public async Task<IReadOnlyList<Enrollment>> GetCompletedByStudentForCoursesAsync(Guid studentId, IReadOnlyCollection<Guid> courseIds, CancellationToken cancellationToken = default)
     {
-        var offeringIdsForCourses = await context.CourseOfferings
+        // Materializes matching CourseOfferings first and extracts their ids client-side (rather
+        // than projecting/reconstructing the CourseOfferingId value object inside a second LINQ
+        // query) - constructing a value-converted struct inline inside a query predicate is not
+        // reliably translatable by EF Core's Postgres provider and throws at query-execution time
+        // instead of translating to SQL.
+        var matchingOfferings = await context.CourseOfferings
             .Where(o => courseIds.Contains(o.CourseId))
-            .Select(o => o.Id)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+        var matchingOfferingIds = matchingOfferings.Select(o => o.Id.Value).ToList();
 
         return await context.Enrollments
-            .Where(e => e.StudentId == studentId && e.Grade != null && offeringIdsForCourses.Contains(new Domain.CourseOfferings.CourseOfferingId(e.CourseOfferingId)))
+            .Where(e => e.StudentId == studentId && e.Grade != null && matchingOfferingIds.Contains(e.CourseOfferingId))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }

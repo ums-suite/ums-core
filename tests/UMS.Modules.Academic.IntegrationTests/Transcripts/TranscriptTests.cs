@@ -27,7 +27,7 @@ public sealed class TranscriptTests(AcademicApiFixture fixture)
         var course = await AcademicTestDataSeeder.SeedCourseAsync(client, adminToken);
         var (_, semesterId) = await AcademicTestDataSeeder.SeedOpenSemesterAsync(client, adminToken);
         var offering = await AcademicTestDataSeeder.SeedCourseOfferingAsync(client, adminToken, course.Id, semesterId, departmentId, capacity: 5);
-        var (facultyMemberId, _, facultyToken) = await AcademicTestDataSeeder.SeedFacultyMemberAsync(client, adminToken, departmentId, designationId);
+        var (facultyMemberId, _, facultyToken) = await AcademicTestDataSeeder.SeedFacultyMemberAsync(fixture, client, adminToken, departmentId, designationId);
         (await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, $"/api/v1/academic/course-offerings/{offering.Id}/instructor") { Content = JsonContent.Create(new AssignInstructorRequest(facultyMemberId)) }.WithBearerToken(adminToken))).EnsureSuccessStatusCode();
         var offeringWithExam = await AcademicTestDataSeeder.AddExamAsync(client, adminToken, offering.Id, [new CreateAssessmentRequest("Only", 1.0m)]);
         var assessmentId = offeringWithExam.Exams.Single().Assessments.Single().Id;

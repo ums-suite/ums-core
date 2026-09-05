@@ -66,6 +66,7 @@ public static class AcademicTestDataSeeder
                     AcademicPermissions.CourseOfferingManage,
                     AcademicPermissions.EnrollmentApprove,
                     AcademicPermissions.GradeLock,
+                    AcademicPermissions.GradeCorrect,
                     AcademicPermissions.ResultApprove,
                     AcademicPermissions.ResultPublish,
                     AcademicPermissions.StudentResultRead,
@@ -98,21 +99,27 @@ public static class AcademicTestDataSeeder
     public static async Task<CourseDto> SeedCourseAsync(HttpClient client, string adminAccessToken, int creditHours = 3, IReadOnlyCollection<Guid>? prerequisiteCourseIds = null) =>
         await PostAsync<CourseDto>(client, adminAccessToken, "/api/v1/academic/courses", new CreateCourseRequest($"CRS-{Guid.NewGuid():N}"[..10], "Test Course", creditHours, prerequisiteCourseIds));
 
-    /// <summary>A Semester whose registration AND drop windows are both already open (spanning yesterday through 60 days from now) so ACD-6/ACD-7's window checks pass without any test needing to fake the clock.</summary>
+    /// <summary>A Semester whose registration AND drop windows are both already open (spanning yesterday through 60 days from now) so ACD-6/ACD-7's window checks pass without any test needing to fake the clock. Each call uses a distinct, effectively-collision-free <c>AcademicSessionCode</c> (a random far-future year pair) since many test methods run against the SAME shared Postgres container within one test collection and <c>AcademicSession.Code</c> is unique.</summary>
     public static async Task<(Guid AcademicSessionId, Guid SemesterId)> SeedOpenSemesterAsync(HttpClient client, string adminAccessToken)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var yesterday = today.AddDays(-1);
         var future = today.AddDays(60);
+        var year = System.Threading.Interlocked.Increment(ref _nextAcademicSessionYear);
 
         var session = await PostAsync<AcademicSessionDto>(
             client,
             adminAccessToken,
             "/api/v1/academic/academic-sessions",
-            new CreateAcademicSessionRequest($"{today.Year}-{today.Year + 1}", [new CreateSemesterRequest("Test Semester", yesterday, future, yesterday, future)]));
+            new CreateAcademicSessionRequest($"{year}-{year + 1}", [new CreateSemesterRequest("Test Semester", yesterday, future, yesterday, future)]));
 
         return (session.Id, session.Semesters.Single().Id);
     }
+
+    // AcademicSessionCode is strictly "YYYY-YYYY" (4-digit years) - stays comfortably within that
+    // bound while still starting from a randomized base so repeated test runs against a fresh
+    // container don't depend on any particular starting value.
+    private static int _nextAcademicSessionYear = 2100 + Random.Shared.Next(0, 3000);
 
     public static async Task<CourseOfferingDto> SeedCourseOfferingAsync(HttpClient client, string adminAccessToken, Guid courseId, Guid semesterId, Guid departmentId, int capacity, int sectionCount = 1)
     {
@@ -132,8 +139,8 @@ public static class AcademicTestDataSeeder
         return designation.Id;
     }
 
-    /// <summary>Onboards a real FacultyMember (via Faculty's own real endpoint - the FAC-4 outbox-relay/Faculty-lookup contracts Academic depends on are exercised for real) and logs in as their backing User.</summary>
-    public static async Task<(Guid FacultyMemberId, Guid UserId, string AccessToken)> SeedFacultyMemberAsync(HttpClient client, string adminAccessToken, Guid departmentId, Guid designationId)
+    /// <summary>Onboards a real FacultyMember (via Faculty's own real endpoint - the FAC-4 outbox-relay/Faculty-lookup contracts Academic depends on are exercised for real), grants them the baseline Academic instructor Permission bundle (<c>grade.enter</c>/<c>attendance.record</c> - a real Instructor's own scope, not the HR/Registrar admin bundle), and logs in as their backing User.</summary>
+    public static async Task<(Guid FacultyMemberId, Guid UserId, string AccessToken)> SeedFacultyMemberAsync(AcademicApiFixture fixture, HttpClient client, string adminAccessToken, Guid departmentId, Guid designationId)
     {
         var user = await TestUsers.ProvisionAsync(client);
         var facultyMember = await PostAsync<FacultyMemberDto>(
@@ -141,6 +148,27 @@ public static class AcademicTestDataSeeder
             adminAccessToken,
             "/api/v1/faculty/members",
             new OnboardFacultyMemberRequest(user.Id, $"EMP-{Guid.NewGuid():N}"[..10], departmentId, designationId, "FullTime", DateOnly.FromDateTime(DateTime.UtcNow)));
+
+        using (var scope = fixture.Services.CreateScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+            var roles = scope.ServiceProvider.GetRequiredService<IRoleRepository>();
+            var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            var clock = scope.ServiceProvider.GetRequiredService<IClock>();
+
+            var now = clock.UtcNow;
+            var role = Role.Create(
+                $"IntegrationTestInstructor-{Guid.NewGuid():N}",
+                "Baseline Instructor Permission bundle used only by the integration test suite.",
+                [AcademicPermissions.GradeEnter, AcademicPermissions.AttendanceRecord],
+                now);
+            roles.Add(role);
+
+            var domainUser = await users.GetByIdAsync(new UserId(user.Id)) ?? throw new InvalidOperationException("Seeded FacultyMember's backing User was not found immediately after provisioning.");
+            domainUser.AssignRole(role.Id, scopeNode: null, now);
+
+            await unitOfWork.SaveChangesAsync();
+        }
 
         var login = await TestUsers.LoginAsync(client, user.Username);
         return (facultyMember.Id, user.Id, login.AccessToken);

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using UMS.Modules.Academic.Application.Enrollments;
 using UMS.Modules.Academic.Application.Permissions;
@@ -21,7 +22,10 @@ internal static class EnrollmentEndpoints
             return result.Match<IResult>(dto => Results.Created($"/api/v1/academic/enrollments/{dto.Id}", dto), error => error.ToProblemResult(httpContext));
         }).RequireLiveSession();
 
-        enrollments.MapDelete("/{id:guid}", async (Guid id, DropEnrollmentRequest body, HttpContext httpContext, EnrollmentService service, CancellationToken cancellationToken) =>
+        // DELETE requests don't support ASP.NET Core minimal API body inference - [FromBody] is
+        // required here, or endpoint-route-table construction throws at startup for the WHOLE app
+        // (every endpoint, not just this one), the exact way this was first caught.
+        enrollments.MapDelete("/{id:guid}", async (Guid id, [FromBody] DropEnrollmentRequest body, HttpContext httpContext, EnrollmentService service, CancellationToken cancellationToken) =>
         {
             var result = await service.DropAsync(httpContext.User.GetUserId(), id, body, httpContext.GetAuditContext(), cancellationToken).ConfigureAwait(false);
             return result.Match<IResult>(Results.Ok, error => error.ToProblemResult(httpContext));

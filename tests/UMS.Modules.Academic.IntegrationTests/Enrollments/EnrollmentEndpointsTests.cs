@@ -142,6 +142,11 @@ public sealed class EnrollmentEndpointsTests(AcademicApiFixture fixture)
         var first = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/api/v1/academic/enrollments") { Content = JsonContent.Create(request) }.WithBearerToken(studentToken));
         var second = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/api/v1/academic/enrollments") { Content = JsonContent.Create(request) }.WithBearerToken(studentToken));
 
+        var firstBody = await first.Content.ReadAsStringAsync();
+        var secondBody = await second.Content.ReadAsStringAsync();
+        Assert.True(first.IsSuccessStatusCode, $"first: {first.StatusCode} {firstBody}");
+        Assert.True(second.IsSuccessStatusCode, $"second: {second.StatusCode} {secondBody}");
+
         var firstEnrollment = await first.Content.ReadFromJsonAsync<EnrollmentDto>();
         var secondEnrollment = await second.Content.ReadFromJsonAsync<EnrollmentDto>();
         Assert.Equal(firstEnrollment!.Id, secondEnrollment!.Id);

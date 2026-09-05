@@ -27,11 +27,18 @@ namespace UMS.Modules.Academic.Infrastructure.Persistence.Repositories;
 /// </summary>
 internal sealed class ResultPublicationRepository(AcademicDbContext context) : IResultPublicationRepository
 {
+    // AsNoTracking deliberately, on BOTH reads: ResultPublication.Status (and every transition
+    // column) is NEVER mutated through this DbContext's normal tracked SaveChanges path - every
+    // transition is the raw-SQL conditional UPDATE above, which bypasses the change tracker
+    // entirely. Without AsNoTracking, EF Core's identity-map behavior would return an
+    // ALREADY-TRACKED (and therefore stale) instance for a row this same DbContext loaded earlier
+    // in the request, even though the raw SQL UPDATE already committed a newer value to the actual
+    // database row - exactly the bug this comment exists to prevent a regression of.
     public Task<ResultPublication?> GetByIdAsync(ResultPublicationId id, CancellationToken cancellationToken = default) =>
-        context.ResultPublications.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+        context.ResultPublications.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
     public Task<ResultPublication?> GetByCourseOfferingIdAsync(Guid courseOfferingId, CancellationToken cancellationToken = default) =>
-        context.ResultPublications.FirstOrDefaultAsync(r => r.CourseOfferingId == courseOfferingId, cancellationToken);
+        context.ResultPublications.AsNoTracking().FirstOrDefaultAsync(r => r.CourseOfferingId == courseOfferingId, cancellationToken);
 
     public void Add(ResultPublication resultPublication) => context.ResultPublications.Add(resultPublication);
 
