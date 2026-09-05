@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>UMS.Modules.Academic.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Pinned to 10.0.11 explicitly - see Faculty.Infrastructure's own csproj remark: Npgsql.EntityFrameworkCore.PostgreSQL
+         10.0.3 otherwise pulls an older EFCore 10.0.4 transitively, conflicting with Design's 10.0.11. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.11" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.11">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UMS.Modules.Academic.Domain\UMS.Modules.Academic.Domain.csproj" />
+    <ProjectReference Include="..\UMS.Modules.Academic.Application\UMS.Modules.Academic.Application.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Resilience\UMS.Shared.Resilience.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Authorization\UMS.Shared.Authorization.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Outbox\UMS.Shared.Outbox.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Organization\UMS.Shared.Organization.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Faculty\UMS.Shared.Faculty.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Student\UMS.Shared.Student.csproj" />
+  </ItemGroup>
+
+</Project>

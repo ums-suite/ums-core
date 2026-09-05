@@ -16,6 +16,17 @@ namespace UMS.Shared.Faculty;
 public interface IFacultyMemberLookup
 {
     public Task<FacultyMemberSummary?> GetAsync(Guid facultyMemberId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// ACD-9 (release/DEVELOPMENT_PLAN.md Flow #12, Academic): resolves a FacultyMember by the
+    /// Identity <c>User</c> id backing their login - what Academic's attendance-recording
+    /// permission check uses to turn the caller's JWT identity into a FacultyMemberId it can
+    /// compare against a <c>CourseOffering</c>'s assigned instructor, then gate on
+    /// <see cref="FacultyMemberSummary.Status"/> being `Active` - all in the one fresh, synchronous
+    /// call design-decisions.md's "In-Process Event Delivery Guarantee for InstructorAssigned
+    /// Projections" decision requires for this specific gate (never a cached/projected value).
+    /// </summary>
+    public Task<FacultyMemberSummary?> GetByUserIdAsync(Guid identityUserId, CancellationToken cancellationToken = default);
 }
 
 /// <summary>The subset of a FacultyMember's employment profile Academic needs to validate an instructor assignment.</summary>
