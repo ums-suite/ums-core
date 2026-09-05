@@ -28,16 +28,6 @@ namespace UMS.Modules.Academic.Domain.ResultPublications;
 /// </summary>
 public sealed class ResultPublication : AggregateRoot<ResultPublicationId>
 {
-    private static readonly Dictionary<ResultPublicationStatus, ResultPublicationStatus[]> LegalTransitions = new()
-    {
-        [ResultPublicationStatus.Draft] = [ResultPublicationStatus.Calculated],
-        [ResultPublicationStatus.Calculated] = [ResultPublicationStatus.Calculated, ResultPublicationStatus.Verified],
-        [ResultPublicationStatus.Verified] = [ResultPublicationStatus.Approved],
-        [ResultPublicationStatus.Approved] = [ResultPublicationStatus.Published],
-        [ResultPublicationStatus.Published] = [ResultPublicationStatus.Archived, ResultPublicationStatus.Verified],
-        [ResultPublicationStatus.Archived] = [],
-    };
-
     private ResultPublication()
     {
     }
@@ -85,7 +75,11 @@ public sealed class ResultPublication : AggregateRoot<ResultPublicationId>
     /// <summary>ACD-10: Faculty submits/resubmits marks for this batch. Legal from `Draft` (first submission) or `Calculated` (any resubmission before lock) - explicitly illegal once `Verified`/`Approved`/`Published`/`Archived`.</summary>
     public void Submit(DateTimeOffset now)
     {
-        EnsureLegalTransition(ResultPublicationStatus.Calculated);
+        if (Status is not (ResultPublicationStatus.Draft or ResultPublicationStatus.Calculated))
+        {
+            throw new InvalidOperationException($"Cannot submit grades for a ResultPublication in status '{Status}' - a grade batch is only submittable while 'Draft' or 'Calculated'.");
+        }
+
         Status = ResultPublicationStatus.Calculated;
         CalculatedAt = now;
         RejectedAt = null;
@@ -111,10 +105,18 @@ public sealed class ResultPublication : AggregateRoot<ResultPublicationId>
         RejectionReason = reason.Trim();
     }
 
-    /// <summary>ACD-11 (lock path): Department Head reviews and locks the batch. `Calculated` &#8594; `Verified`.</summary>
+    /// <summary>
+    /// ACD-11 (lock path): Department Head reviews and locks the batch. `Calculated` &#8594;
+    /// `Verified`. Deliberately asserts its OWN required prior status directly (<see
+    /// cref="ResultPublicationStatus.Calculated"/>) rather than going through a shared, dictionary-
+    /// keyed-by-target-status helper: <see cref="ReenterForCorrection"/> ALSO targets `Verified`,
+    /// from a different prior status (`Published`) - a generic "is `Verified` reachable from the
+    /// current status" check cannot distinguish the two actions from each other and would
+    /// incorrectly let either one apply from the other's source state.
+    /// </summary>
     public void Lock(Guid lockedByUserId, DateTimeOffset now)
     {
-        EnsureLegalTransition(ResultPublicationStatus.Verified);
+        EnsureCurrentStatus(ResultPublicationStatus.Calculated, ResultPublicationStatus.Verified);
         Status = ResultPublicationStatus.Verified;
         LockedAt = now;
         LockedByUserId = lockedByUserId;
@@ -123,7 +125,7 @@ public sealed class ResultPublication : AggregateRoot<ResultPublicationId>
     /// <summary>An authorized authority (Registrar/delegate) approves before publication. `Verified` &#8594; `Approved`.</summary>
     public void Approve(Guid approvedByUserId, DateTimeOffset now)
     {
-        EnsureLegalTransition(ResultPublicationStatus.Approved);
+        EnsureCurrentStatus(ResultPublicationStatus.Verified, ResultPublicationStatus.Approved);
         Status = ResultPublicationStatus.Approved;
         ApprovedAt = now;
         ApprovedByUserId = approvedByUserId;
@@ -132,7 +134,7 @@ public sealed class ResultPublication : AggregateRoot<ResultPublicationId>
     /// <summary>ACD-12: `Approved` &#8594; `Published` - the underlying Grades become locked/visible to the Student (requirement-spec.md §2/§4).</summary>
     public void Publish(Guid publishedByUserId, DateTimeOffset now)
     {
-        EnsureLegalTransition(ResultPublicationStatus.Published);
+        EnsureCurrentStatus(ResultPublicationStatus.Approved, ResultPublicationStatus.Published);
         Status = ResultPublicationStatus.Published;
         PublishedAt = now;
         PublishedByUserId = publishedByUserId;
@@ -141,26 +143,26 @@ public sealed class ResultPublication : AggregateRoot<ResultPublicationId>
     /// <summary>`Published` &#8594; `Archived` - the state machine's terminal step.</summary>
     public void Archive(DateTimeOffset now)
     {
-        EnsureLegalTransition(ResultPublicationStatus.Archived);
+        EnsureCurrentStatus(ResultPublicationStatus.Published, ResultPublicationStatus.Archived);
         Status = ResultPublicationStatus.Archived;
         ArchivedAt = now;
     }
 
-    /// <summary>ACD-13: the correction workflow's re-entry point (requirement-spec.md §2/§4/§9 decision 3) - `Published` &#8594; `Verified` ONLY, never a skip back to `Draft`/`Calculated`, and never a direct in-place edit of an already-published value.</summary>
+    /// <summary>ACD-13: the correction workflow's re-entry point (requirement-spec.md §2/§4/§9 decision 3) - `Published` &#8594; `Verified` ONLY, never a skip back to `Draft`/`Calculated`, and never a direct in-place edit of an already-published value. See <see cref="Lock"/>'s own remarks for why this asserts its prior status directly rather than through the shared target-status dictionary.</summary>
     public void ReenterForCorrection(DateTimeOffset now)
     {
-        EnsureLegalTransition(ResultPublicationStatus.Verified);
+        EnsureCurrentStatus(ResultPublicationStatus.Published, ResultPublicationStatus.Verified);
         Status = ResultPublicationStatus.Verified;
         CorrectionCount++;
         PublishedAt = null;
         PublishedByUserId = null;
     }
 
-    private void EnsureLegalTransition(ResultPublicationStatus newStatus)
+    private void EnsureCurrentStatus(ResultPublicationStatus expected, ResultPublicationStatus newStatus)
     {
-        if (!LegalTransitions.TryGetValue(Status, out var allowed) || !allowed.Contains(newStatus))
+        if (Status != expected)
         {
-            throw new InvalidOperationException($"Cannot transition a ResultPublication from '{Status}' to '{newStatus}' - this is not a legal transition.");
+            throw new InvalidOperationException($"Cannot transition a ResultPublication from '{Status}' to '{newStatus}' - this is not a legal transition (requires '{expected}').");
         }
     }
 }
