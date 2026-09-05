@@ -150,6 +150,11 @@ public sealed class GradeWorkflowTests(AcademicApiFixture fixture)
         var corrected = await correctResponse.Content.ReadFromJsonAsync<GradeDto>();
         Assert.Equal(95m, corrected!.CalculatedScore);
 
+        // Regression coverage for a genuine bug caught during this flow's manual end-to-end
+        // verification: the per-assessment breakdown used to stay stale at the pre-correction
+        // scores even though the aggregate CalculatedScore above was correctly updated.
+        Assert.All(corrected.Scores, s => Assert.Equal(95m, s.Score));
+
         var stateResponse = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, $"/api/v1/academic/course-offerings/{offering.Id}").WithBearerToken(adminToken));
         stateResponse.EnsureSuccessStatusCode();
     }

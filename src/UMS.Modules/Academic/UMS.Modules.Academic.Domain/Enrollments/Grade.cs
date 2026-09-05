@@ -61,8 +61,23 @@ public sealed class Grade
         SubmittedByUserId = submittedByUserId;
     }
 
-    /// <summary>ACD-13: the controlled correction workflow's actual value mutation - the caller (<c>GradeCorrectionService</c>) is responsible for having already re-entered the parent ResultPublication at `Verified` via the state-guarded conditional update BEFORE invoking this, and for recording the resulting <c>GradeCorrected</c> event.</summary>
-    public decimal Correct(PercentageOrGpa newScore, string newLetterGrade, string reason, Guid correctedByUserId, DateTimeOffset now)
+    /// <summary>
+    /// ACD-13: the controlled correction workflow's actual value mutation - the caller
+    /// (<c>GradeCorrectionService</c>) is responsible for having already re-entered the parent
+    /// ResultPublication at `Verified` via the state-guarded conditional update BEFORE invoking
+    /// this, and for recording the resulting <c>GradeCorrected</c> event.
+    ///
+    /// <para>
+    /// Replaces <see cref="Scores"/> the same way <see cref="Submit"/> does - a genuine bug caught
+    /// during this flow's manual end-to-end verification found this method originally updated only
+    /// the derived <see cref="CalculatedScore"/>/<see cref="LetterGrade"/> fields, leaving the
+    /// per-assessment <see cref="AssessmentScoreEntry"/> rows a correction is meant to fix (e.g.
+    /// "transcription error in original marking") permanently stale - the very data a correction
+    /// exists to fix would otherwise survive the correction unchanged, silently diverging from the
+    /// now-correct aggregate it's supposed to justify.
+    /// </para>
+    /// </summary>
+    public decimal Correct(IReadOnlyCollection<(Guid AssessmentId, decimal Score)> scores, PercentageOrGpa newScore, string newLetterGrade, string reason, Guid correctedByUserId, DateTimeOffset now)
     {
         if (string.IsNullOrWhiteSpace(reason))
         {
@@ -71,6 +86,13 @@ public sealed class Grade
 
         var previousScore = CalculatedScore?.Value ?? 0;
         _corrections.Add(new GradeCorrectionEntry(Id, previousScore, newScore.Value, reason.Trim(), correctedByUserId, now));
+
+        _scores.Clear();
+        foreach (var (assessmentId, score) in scores)
+        {
+            _scores.Add(new AssessmentScoreEntry(Id, assessmentId, score));
+        }
+
         CalculatedScore = newScore;
         LetterGrade = newLetterGrade;
         return previousScore;

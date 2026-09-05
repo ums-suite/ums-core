@@ -40,7 +40,7 @@ public sealed class GradeTests
     {
         var enrollment = CreateEnrollmentWithGrade("B");
 
-        Assert.Throws<ArgumentException>(() => enrollment.Grade!.Correct(PercentageOrGpa.CreatePercentage(80m).Value, "A", "  ", Guid.NewGuid(), Now));
+        Assert.Throws<ArgumentException>(() => enrollment.Grade!.Correct([(Guid.NewGuid(), 80m)], PercentageOrGpa.CreatePercentage(80m).Value, "A", "  ", Guid.NewGuid(), Now));
     }
 
     [Fact]
@@ -49,7 +49,7 @@ public sealed class GradeTests
         var enrollment = CreateEnrollmentWithGrade("B");
         var grade = enrollment.Grade!;
 
-        var previousScore = grade.Correct(PercentageOrGpa.CreatePercentage(90m).Value, "A", "Recomputation error", Guid.NewGuid(), Now);
+        var previousScore = grade.Correct([(Guid.NewGuid(), 90m)], PercentageOrGpa.CreatePercentage(90m).Value, "A", "Recomputation error", Guid.NewGuid(), Now);
 
         Assert.Equal(70m, previousScore);
         Assert.Equal("A", grade.LetterGrade);
@@ -58,6 +58,24 @@ public sealed class GradeTests
         Assert.Equal(70m, correction.PreviousScore);
         Assert.Equal(90m, correction.NewScore);
         Assert.Equal("Recomputation error", correction.Reason);
+    }
+
+    [Fact]
+    public void Correct_replaces_the_prior_per_assessment_scores_rather_than_leaving_them_stale()
+    {
+        // Regression test for a genuine bug caught during this flow's manual end-to-end
+        // verification: Correct used to update only the derived CalculatedScore/LetterGrade,
+        // leaving the per-assessment AssessmentScoreEntry rows - the very data a correction like
+        // "transcription error in original marking" is meant to fix - permanently stale.
+        var enrollment = CreateEnrollmentWithGrade("B");
+        var grade = enrollment.Grade!;
+        var correctedAssessmentId = Guid.NewGuid();
+
+        grade.Correct([(correctedAssessmentId, 90m)], PercentageOrGpa.CreatePercentage(90m).Value, "A", "Recomputation error", Guid.NewGuid(), Now);
+
+        var score = Assert.Single(grade.Scores);
+        Assert.Equal(correctedAssessmentId, score.AssessmentId);
+        Assert.Equal(90m, score.Score);
     }
 
     [Fact]

@@ -76,6 +76,23 @@ public sealed class EnrollmentService(
             return Error.Validation("enrollment.section_not_found", $"CourseOffering '{request.CourseOfferingId}' has no Section '{request.SectionId}'.");
         }
 
+        // edge-cases.md "Duplicate/double-click Enrollment submission" - checked up front, before
+        // the seat-limit claim below, not only via the unique-constraint-violation catch further
+        // down. A genuine bug caught during this flow's manual end-to-end verification: a
+        // double-click against an already-Active enrollment for a CourseOffering that is (as a
+        // direct result of that same enrollment) now at capacity used to fail the seat-limit check
+        // FIRST and return "no seat available" - the insert, and therefore the catch-based dedup
+        // path, was never reached, so the documented idempotent-no-op outcome was unreachable in
+        // exactly the case a real double-click most often lands in (a just-filled, popular
+        // offering). This early read-and-return covers that sequential case; the catch-based
+        // duplicate-value path below still covers a genuine concurrent double-click racing the seat
+        // claim itself.
+        var existingEnrollment = await enrollments.GetByStudentCourseOfferingSemesterAsync(standing.StudentId, offering.Id.Value, offering.SemesterId, cancellationToken).ConfigureAwait(false);
+        if (existingEnrollment is not null)
+        {
+            return ToDto(existingEnrollment);
+        }
+
         var semester = await sessions.GetSemesterByIdAsync(new SemesterId(offering.SemesterId), cancellationToken).ConfigureAwait(false);
         if (semester is null)
         {

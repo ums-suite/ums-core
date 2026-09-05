@@ -185,6 +185,72 @@ public sealed class EnrollmentEndpointsTests(AcademicApiFixture fixture)
     }
 
     [Fact]
+    public async Task A_retried_duplicate_Create_against_an_offering_the_same_students_own_enrollment_filled_to_capacity_is_idempotent_not_a_conflict()
+    {
+        // Regression test for a genuine bug caught during this flow's manual end-to-end
+        // verification: the pre-fix implementation only recognized a duplicate/double-click
+        // resubmission via a unique-constraint-violation catch AFTER the seat-limit claim - so
+        // whenever the offering's only remaining seat was the caller's own just-created Enrollment
+        // (capacity: 1, exactly the scenario a real double-click on a popular, now-full offering
+        // produces), the seat claim itself failed first and the request returned
+        // "seat_no_longer_available" instead of the documented idempotent no-op.
+        var client = fixture.CreateClient();
+        var (_, _, _, adminToken) = await AcademicTestDataSeeder.ProvisionAdminAsync(fixture, client);
+        var departmentId = await AcademicTestDataSeeder.SeedDepartmentAsync(client, adminToken);
+        var program = await AcademicTestDataSeeder.SeedProgramAsync(client, adminToken, departmentId);
+        var course = await AcademicTestDataSeeder.SeedCourseAsync(client, adminToken);
+        var (_, semesterId) = await AcademicTestDataSeeder.SeedOpenSemesterAsync(client, adminToken);
+        var offering = await AcademicTestDataSeeder.SeedCourseOfferingAsync(client, adminToken, course.Id, semesterId, departmentId, capacity: 1);
+        var (_, studentToken) = await AcademicTestDataSeeder.SeedActiveStudentAsync(fixture, client, departmentId, program.Id);
+        var request = new CreateEnrollmentRequest(offering.Id, offering.Sections.Single().Id, null);
+
+        var first = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/api/v1/academic/enrollments") { Content = JsonContent.Create(request) }.WithBearerToken(studentToken));
+        var second = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/api/v1/academic/enrollments") { Content = JsonContent.Create(request) }.WithBearerToken(studentToken));
+
+        var secondBody = await second.Content.ReadAsStringAsync();
+        Assert.True(second.IsSuccessStatusCode, $"second: {second.StatusCode} {secondBody}");
+
+        var firstEnrollment = await first.Content.ReadFromJsonAsync<EnrollmentDto>();
+        var secondEnrollment = await second.Content.ReadFromJsonAsync<EnrollmentDto>();
+        Assert.Equal(firstEnrollment!.Id, secondEnrollment!.Id);
+        Assert.Equal("Active", secondEnrollment.Status);
+    }
+
+    [Fact]
+    public async Task Create_after_dropping_the_same_CourseOffering_creates_a_fresh_Active_enrollment_not_the_stale_Dropped_one()
+    {
+        // Regression test for a genuine bug caught during this flow's manual end-to-end
+        // verification: the pre-fix unique constraint on (student, courseOffering, semester) was
+        // unconditional, so once a Student dropped a CourseOffering, EVERY later Create attempt for
+        // that exact tuple collided with the now-Dropped row and the duplicate-value catch path
+        // handed back that stale Dropped DTO forever - a real drop-then-re-enroll-in-the-same-
+        // offering was permanently impossible after the first drop.
+        var client = fixture.CreateClient();
+        var (_, _, _, adminToken) = await AcademicTestDataSeeder.ProvisionAdminAsync(fixture, client);
+        var departmentId = await AcademicTestDataSeeder.SeedDepartmentAsync(client, adminToken);
+        var program = await AcademicTestDataSeeder.SeedProgramAsync(client, adminToken, departmentId);
+        var course = await AcademicTestDataSeeder.SeedCourseAsync(client, adminToken);
+        var (_, semesterId) = await AcademicTestDataSeeder.SeedOpenSemesterAsync(client, adminToken);
+        var offering = await AcademicTestDataSeeder.SeedCourseOfferingAsync(client, adminToken, course.Id, semesterId, departmentId, capacity: 5);
+        var (_, studentToken) = await AcademicTestDataSeeder.SeedActiveStudentAsync(fixture, client, departmentId, program.Id);
+        var sectionId = offering.Sections.Single().Id;
+
+        var enrollResponse = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/api/v1/academic/enrollments") { Content = JsonContent.Create(new CreateEnrollmentRequest(offering.Id, sectionId, null)) }.WithBearerToken(studentToken));
+        var enrollment = await enrollResponse.Content.ReadFromJsonAsync<EnrollmentDto>();
+
+        var dropResponse = await client.SendAsync(new HttpRequestMessage(HttpMethod.Delete, $"/api/v1/academic/enrollments/{enrollment!.Id}") { Content = JsonContent.Create(new DropEnrollmentRequest("changed my mind")) }.WithBearerToken(studentToken));
+        Assert.Equal(HttpStatusCode.OK, dropResponse.StatusCode);
+
+        var reenrollResponse = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "/api/v1/academic/enrollments") { Content = JsonContent.Create(new CreateEnrollmentRequest(offering.Id, sectionId, null)) }.WithBearerToken(studentToken));
+        var reenrollBody = await reenrollResponse.Content.ReadAsStringAsync();
+        Assert.True(reenrollResponse.IsSuccessStatusCode, $"reenroll: {reenrollResponse.StatusCode} {reenrollBody}");
+
+        var reenrollment = await reenrollResponse.Content.ReadFromJsonAsync<EnrollmentDto>();
+        Assert.NotEqual(enrollment.Id, reenrollment!.Id);
+        Assert.Equal("Active", reenrollment.Status);
+    }
+
+    [Fact]
     public async Task Advisor_approval_gate_holds_a_Program_configured_Enrollment_Pending_until_explicitly_approved()
     {
         var client = fixture.CreateClient();

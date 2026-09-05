@@ -47,7 +47,14 @@ internal sealed class EnrollmentRepository(AcademicDbContext context) : IEnrollm
             .ConfigureAwait(false);
 
     public Task<Enrollment?> GetByStudentCourseOfferingSemesterAsync(Guid studentId, Guid courseOfferingId, Guid semesterId, CancellationToken cancellationToken = default) =>
-        context.Enrollments.FirstOrDefaultAsync(e => e.StudentId == studentId && e.CourseOfferingId == courseOfferingId && e.SemesterId == semesterId, cancellationToken);
+
+        // Excludes Dropped rows to match the partial unique index (EnrollmentConfiguration) - after
+        // a drop-then-re-enroll, a tuple can have one historical Dropped row plus one current
+        // Active/Pending row; this method backs the duplicate-submission idempotent-return path
+        // (EnrollmentService.CreateAsync), which must resolve to the current row, never a stale
+        // Dropped one, even if the Dropped row happens to be the one with the later CreatedAt (a
+        // re-drop of a re-enrollment would otherwise make ordering by recency alone unreliable too).
+        context.Enrollments.FirstOrDefaultAsync(e => e.StudentId == studentId && e.CourseOfferingId == courseOfferingId && e.SemesterId == semesterId && e.Status != EnrollmentStatus.Dropped, cancellationToken);
 
     public void Add(Enrollment enrollment) => context.Enrollments.Add(enrollment);
 }

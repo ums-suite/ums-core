@@ -87,7 +87,7 @@ public sealed class GradeCorrectionService(
             return Error.Conflict("grade.already_reentered", $"CourseOffering's grade batch is already '{actual?.Status}' - another correction may already be in progress.");
         }
 
-        enrollment.Grade.Correct(calcResult.Value.CalculatedScore, calcResult.Value.LetterGrade, request.Reason, correctedByUserId, now);
+        enrollment.Grade.Correct(calcInputs, calcResult.Value.CalculatedScore, calcResult.Value.LetterGrade, request.Reason, correctedByUserId, now);
         eventRecorder.Enqueue(new GradeCorrected(gradeId, enrollment.Id.Value, resultPublication.Id.Value, previousScore, calcResult.Value.CalculatedScore.Value, request.Reason, correctedByUserId, now));
 
         var auditRequest = audit.ToRequest("Grade", gradeId.ToString(), "correct", before, JsonSerializer.Serialize(new { calcResult.Value.CalculatedScore, calcResult.Value.LetterGrade }), reason: request.Reason);

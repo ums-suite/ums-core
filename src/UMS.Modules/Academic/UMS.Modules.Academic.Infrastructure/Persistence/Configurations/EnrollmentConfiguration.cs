@@ -17,7 +17,21 @@ internal sealed class EnrollmentConfiguration : IEntityTypeConfiguration<Enrollm
         builder.Property(e => e.SemesterId).HasColumnName("semester_id").IsRequired();
         builder.Property(e => e.SectionId).HasColumnName("section_id").IsRequired();
 
-        builder.HasIndex(e => new { e.StudentId, e.CourseOfferingId, e.SemesterId }).IsUnique().HasDatabaseName("ux_enrollments_student_courseoffering_semester");
+        // Deliberately a PARTIAL unique index, not a plain one: requirement-spec.md §4's
+        // "exactly one Enrollment per (Student, CourseOffering, Semester)" invariant is about the
+        // current roster, not all of history - a genuine bug caught during this flow's manual
+        // end-to-end verification found that an unconditional unique index makes a real
+        // drop-then-re-enroll-in-the-SAME-offering (a legitimate flow requirement-spec.md §2's own
+        // drop-window language assumes exists) permanently impossible after the first drop: every
+        // later POST /enrollments for that exact tuple collides with the now-Dropped row and the
+        // duplicate-submission catch path (below) silently hands back the stale Dropped DTO forever,
+        // never a fresh Active one. Excluding 'Dropped' rows from the constraint lets a fresh row be
+        // inserted after a drop while still blocking a genuine duplicate/double-click against an
+        // already-Active-or-Pending row for the same tuple - the case this index exists to prevent.
+        builder.HasIndex(e => new { e.StudentId, e.CourseOfferingId, e.SemesterId })
+            .IsUnique()
+            .HasFilter("status <> 'Dropped'")
+            .HasDatabaseName("ux_enrollments_student_courseoffering_semester");
         builder.HasIndex(e => new { e.StudentId, e.SemesterId }).HasDatabaseName("ix_enrollments_student_semester");
         builder.HasIndex(e => e.CourseOfferingId).HasDatabaseName("ix_enrollments_course_offering_id");
 

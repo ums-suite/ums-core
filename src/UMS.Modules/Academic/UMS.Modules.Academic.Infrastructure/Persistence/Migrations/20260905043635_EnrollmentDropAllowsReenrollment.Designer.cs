@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using UMS.Modules.Academic.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using UMS.Modules.Academic.Infrastructure.Persistence;
 namespace UMS.Modules.Academic.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AcademicDbContext))]
-    partial class AcademicDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260905043635_EnrollmentDropAllowsReenrollment")]
+    partial class EnrollmentDropAllowsReenrollment
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
