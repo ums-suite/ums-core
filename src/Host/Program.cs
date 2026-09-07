@@ -10,6 +10,8 @@ using UMS.Modules.Documents.Api;
 using UMS.Modules.Documents.Infrastructure;
 using UMS.Modules.Faculty.Api;
 using UMS.Modules.Faculty.Infrastructure;
+using UMS.Modules.Finance.Api;
+using UMS.Modules.Finance.Infrastructure;
 using UMS.Modules.Identity.Api;
 using UMS.Modules.Identity.Infrastructure;
 using UMS.Modules.Learning.Api;
@@ -107,6 +109,16 @@ builder.Services.AddAcademicModule(builder.Configuration);
 // SubmissionEvaluated is a fan-out event only, which is what keeps the graph acyclic).
 builder.Services.AddLearningModule(builder.Configuration);
 
+// Finance — Payment Core (release/DEVELOPMENT_PLAN.md Flow #14) - depends on Identity only
+// (module-boundaries.md: "Finance intentionally has no outgoing domain dependency"): resolves
+// UMS.Shared.Documents.IDocumentGenerationRequester (FIN-15 synchronous receipt generation) and
+// UMS.Shared.Notifications.INotificationRequestIntake (FIN-16), both already registered above, and
+// UMS.Shared.Audit.IAuditRecorder (FIN-17). Also registers this build's real implementation of
+// UMS.Shared.Finance.IInvoiceRequester (FIN-2) - no consumer exists yet (Admission, Flow #15, is
+// its first real in-process caller), the same "contract ships before its first real caller" posture
+// Notifications' and Documents' own shared contracts shipped with.
+builder.Services.AddFinanceModule(builder.Configuration);
+
 // Shared JWT authentication + permission-based authorization (ums-conventions.md: one shared
 // implementation, not per-module reinvention) - every module's protected endpoints gate through
 // this, never their own hand-rolled [Authorize] policy.
@@ -141,6 +153,17 @@ builder.Services.AddRateLimiter(options =>
     AddIdentityIpRateLimitPolicy(options, "identity-mfa-verify", permitLimit: 60, window: TimeSpan.FromMinutes(1));
     AddIdentityIpRateLimitPolicy(options, "identity-password-forgot", permitLimit: 20, window: TimeSpan.FromMinutes(15));
     AddIdentityIpRateLimitPolicy(options, "identity-password-reset", permitLimit: 20, window: TimeSpan.FromMinutes(15));
+
+    // requirement-spec.md finance §5/§11: "Dedicated throttling on payment initiation endpoints" -
+    // keyed by the caller's own user id (an authenticated, self-service action) rather than IP,
+    // since the invariant this guards is one account hammering POST /payments, not a distributed
+    // per-IP attack (that dimension is what Identity's own per-IP policies above already blunt).
+    options.AddPolicy("finance-payment-initiate", (HttpContext httpContext) =>
+    {
+        var redis = httpContext.RequestServices.GetRequiredService<IConnectionMultiplexer>();
+        var partitionKey = httpContext.User.FindFirst(UmsClaimTypes.Subject)?.Value ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return UmsRedisRateLimiterFactory.CreatePartition(redis, "finance-payment-initiate", partitionKey, permitLimit: 20, window: TimeSpan.FromMinutes(1));
+    });
 });
 
 // Postgres readiness check today verifies raw connectivity only - each module adds its own
@@ -172,6 +195,7 @@ await app.Services.UseFacultyModuleAsync();
 await app.Services.UseStudentModuleAsync();
 await app.Services.UseAcademicModuleAsync();
 await app.Services.UseLearningModuleAsync();
+await app.Services.UseFinanceModuleAsync();
 
 app.UseUmsObservability();
 app.UseUmsErrorHandling();
@@ -204,6 +228,7 @@ app.MapFacultyModule();
 app.MapStudentModule();
 app.MapAcademicModule();
 app.MapLearningModule();
+app.MapFinanceModule();
 
 app.Run();
 
