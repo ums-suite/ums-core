@@ -66,6 +66,11 @@ public static class DependencyInjection
         // (learning requirement-spec.md §9.1) and never a direct schema join (ADR-0002).
         services.AddScoped<UMS.Shared.Academic.ICourseOfferingLookup, CrossModule.CourseOfferingLookupAdapter>();
 
+        // release/DEVELOPMENT_PLAN.md Flow #16 (Student - Admission Integration, STU-10) - Student's
+        // transcript-request StudentRequest resolves this in-process instead of calling Academic's
+        // own GET /students/{id}/transcript endpoint over HTTP (ADR-0003).
+        services.AddScoped<UMS.Shared.Academic.ITranscriptQuery, CrossModule.TranscriptQueryAdapter>();
+
         services.AddScoped<ProgramService>();
         services.AddScoped<CourseService>();
         services.AddScoped<CurriculumService>();

@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
 using UMS.Modules.Student.Application.Abstractions;
+using UMS.Modules.Student.Domain.BulkImport;
 using UMS.Modules.Student.Domain.Common;
+using UMS.Modules.Student.Domain.StudentRequests;
 using UMS.Modules.Student.Domain.Students;
 using UMS.Shared.Outbox;
 
@@ -20,6 +22,12 @@ public sealed class StudentDbContext(DbContextOptions<StudentDbContext> options)
 
     internal DbSet<Domain.Students.Student> Students => Set<Domain.Students.Student>();
 
+    internal DbSet<StudentRequest> StudentRequests => Set<StudentRequest>();
+
+    internal DbSet<StudentBulkImportJob> StudentBulkImportJobs => Set<StudentBulkImportJob>();
+
+    internal DbSet<StudentBulkImportRow> StudentBulkImportRows => Set<StudentBulkImportRow>();
+
     internal DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     public void Enqueue(IDomainEvent domainEvent) => _recordedEvents.Add(domainEvent);
@@ -33,6 +41,17 @@ public sealed class StudentDbContext(DbContextOptions<StudentDbContext> options)
     public void SetExpectedVersion<TEntity>(TEntity entity, uint expectedVersion)
         where TEntity : class =>
         Entry(entity).Property("Version").OriginalValue = expectedVersion;
+
+    /// <summary>
+    /// Detached, not Unchanged - EF's own change-detection would otherwise re-flip a merely
+    /// "Unchanged"-marked entity back to Modified on the very next <see cref="SaveChangesAsync"/>
+    /// once it notices its (still-mutated) CurrentValues still differ from OriginalValues.
+    /// Detaching removes it from the change tracker entirely, so it can never be re-persisted from
+    /// this scope regardless of what DetectChanges finds.
+    /// </summary>
+    public void DiscardChanges<TEntity>(TEntity entity)
+        where TEntity : class =>
+        Entry(entity).State = EntityState.Detached;
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -69,15 +88,23 @@ public sealed class StudentDbContext(DbContextOptions<StudentDbContext> options)
     {
         if (exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } postgresException)
         {
-            var entry = exception.Entries.Count > 0 ? exception.Entries[0].Entity as Domain.Students.Student : null;
+            var entity = exception.Entries.Count > 0 ? exception.Entries[0].Entity : null;
 
             switch (postgresException.ConstraintName)
             {
                 case "ux_students_originating_application_id":
-                    translated = new DuplicateValueException("Student", "originatingApplicationId", entry?.OriginatingApplicationId.ToString() ?? "unknown");
+                    translated = new DuplicateValueException("Student", "originatingApplicationId", (entity as Domain.Students.Student)?.OriginatingApplicationId.ToString() ?? "unknown");
                     return true;
                 case "ux_students_student_number":
-                    translated = new DuplicateValueException("Student", "studentNumber", entry?.StudentNumber.Value ?? "unknown");
+                    translated = new DuplicateValueException("Student", "studentNumber", (entity as Domain.Students.Student)?.StudentNumber.Value ?? "unknown");
+                    return true;
+                case "ux_student_requests_student_id_request_type_open":
+                    // design-decisions.md "StudentRequest Dedup Mechanism" - the actual, DB-level
+                    // enforcement of the one-open-request-per-type invariant. StudentRequestService
+                    // translates the resulting "studentrequest.duplicate_value" Conflict into a
+                    // domain error naming the existing open request (edge-cases.md's own residual
+                    // note).
+                    translated = new DuplicateValueException("StudentRequest", "studentId+requestType", (entity as Domain.StudentRequests.StudentRequest)?.StudentId.ToString() ?? "unknown");
                     return true;
             }
         }

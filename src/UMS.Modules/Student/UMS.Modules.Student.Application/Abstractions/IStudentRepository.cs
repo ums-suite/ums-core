@@ -15,5 +15,8 @@ public interface IStudentRepository
 
     public Task<Domain.Students.Student?> GetByOriginatingApplicationIdAsync(Guid originatingApplicationId, CancellationToken cancellationToken = default);
 
+    /// <summary>STU-15: the bulk-import UPDATE row's own lookup key (design-decisions.md "Bulk-Import Concurrency &amp; Field-Scoping Design") - <c>StudentNumber</c> is globally unique and immutable (requirement-spec.md §4), a stable natural key for a re-submitted correction row.</summary>
+    public Task<Domain.Students.Student?> GetByStudentNumberAsync(string studentNumber, CancellationToken cancellationToken = default);
+
     public void Add(Domain.Students.Student student);
 }

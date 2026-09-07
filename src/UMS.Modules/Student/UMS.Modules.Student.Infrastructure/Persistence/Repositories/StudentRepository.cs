@@ -23,5 +23,8 @@ internal sealed class StudentRepository(StudentDbContext context) : IStudentRepo
     public Task<Domain.Students.Student?> GetByOriginatingApplicationIdAsync(Guid originatingApplicationId, CancellationToken cancellationToken = default) =>
         context.Students.FirstOrDefaultAsync(s => s.OriginatingApplicationId == originatingApplicationId, cancellationToken);
 
+    public Task<Domain.Students.Student?> GetByStudentNumberAsync(string studentNumber, CancellationToken cancellationToken = default) =>
+        context.Students.FirstOrDefaultAsync(s => s.StudentNumber.Value == studentNumber, cancellationToken);
+
     public void Add(Domain.Students.Student student) => context.Students.Add(student);
 }

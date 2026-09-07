@@ -63,13 +63,17 @@ public static class StudentTestDataSeeder
     }
 
     /// <summary>Seeds University -&gt; Campus -&gt; Faculty(org-unit) -&gt; Department through Organization's own real endpoints (never a direct DbContext write) - <c>CreateStudentRecordService</c>'s own Department existence check validates against this, so a fabricated id would fail realistically.</summary>
-    public static async Task<Guid> SeedDepartmentAsync(HttpClient client, string adminAccessToken)
+    public static async Task<Guid> SeedDepartmentAsync(HttpClient client, string adminAccessToken) =>
+        (await SeedDepartmentWithFacultyAsync(client, adminAccessToken)).DepartmentId;
+
+    /// <summary>STU-11: the same seeding as <see cref="SeedDepartmentAsync"/>, additionally returning the parent Faculty id - what <c>IOrganizationHierarchyQuery.GetParentFacultyIdAsync</c> resolves a grievance's own-Department-Head escalation to.</summary>
+    public static async Task<(Guid DepartmentId, Guid FacultyId)> SeedDepartmentWithFacultyAsync(HttpClient client, string adminAccessToken)
     {
         var university = await PostAsync<UniversityDto>(client, adminAccessToken, "/api/v1/organization/universities", new CreateUniversityRequest($"Test University {Guid.NewGuid():N}", null));
         var campus = await PostAsync<CampusDto>(client, adminAccessToken, "/api/v1/organization/campuses", new CreateCampusRequest(university.Id, $"Main Campus {Guid.NewGuid():N}"));
         var orgFaculty = await PostAsync<FacultyDto>(client, adminAccessToken, "/api/v1/organization/faculties", new CreateFacultyRequest(campus.Id, $"Faculty of Testing {Guid.NewGuid():N}", null));
         var department = await PostAsync<DepartmentDto>(client, adminAccessToken, "/api/v1/organization/departments", new CreateDepartmentRequest(orgFaculty.Id, $"Department of Testing {Guid.NewGuid():N}", null));
-        return department.Id;
+        return (department.Id, orgFaculty.Id);
     }
 
     /// <summary>

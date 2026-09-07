@@ -11,6 +11,19 @@ public interface IUnitOfWork
 
     public void SetExpectedVersion<TEntity>(TEntity entity, uint expectedVersion)
         where TEntity : class;
+
+    /// <summary>
+    /// STU-15: forces an already-tracked entity back to <c>Unchanged</c>, discarding any pending
+    /// in-memory mutation - used ONLY after catching a <see cref="ConcurrencyConflictException"/> on
+    /// a bulk-import UPDATE row's own <see cref="SaveChangesAsync"/> call, so the failed row's
+    /// rejected edit (and its now-stale <see cref="SetExpectedVersion{TEntity}"/> baseline) can never
+    /// be silently re-attempted by a LATER <see cref="SaveChangesAsync"/> call in the same shared
+    /// worker scope (<c>StudentBulkImportProcessingService</c>'s own remarks) - without this, that
+    /// later, unrelated bookkeeping save would itself throw the same concurrency exception and abort
+    /// the rest of the batch.
+    /// </summary>
+    public void DiscardChanges<TEntity>(TEntity entity)
+        where TEntity : class;
 }
 
 public interface IUmsTransaction : IAsyncDisposable
