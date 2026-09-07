@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using StackExchange.Redis;
 using UMS.Modules.Academic.Api;
 using UMS.Modules.Academic.Infrastructure;
+using UMS.Modules.Admission.Api;
+using UMS.Modules.Admission.Infrastructure;
 using UMS.Modules.Audit.Api;
 using UMS.Modules.Audit.Infrastructure;
 using UMS.Modules.Documents.Api;
@@ -119,6 +121,19 @@ builder.Services.AddLearningModule(builder.Configuration);
 // Notifications' and Documents' own shared contracts shipped with.
 builder.Services.AddFinanceModule(builder.Configuration);
 
+// Admission (release/DEVELOPMENT_PLAN.md Flow #15) - depends on Identity, Organization, Finance,
+// Documents, and Notifications (module-boundaries.md), all already registered above: resolves
+// UMS.Shared.Organization.IOrganizationNodeExistenceChecker (Program existence at campaign setup),
+// UMS.Shared.Finance.IInvoiceRequester (ADM-7/ADM-20 application/confirmation fee), real as of
+// Flow #14 above, UMS.Shared.Documents.IDocumentGenerationRequester (ADM-9 admit card, ADM-18 bulk
+// admit-outcome letters), UMS.Shared.Identity.IUserProvisioner (ADM-2 Applicant registration), and
+// UMS.Shared.Notifications.INotificationRequestIntake. Also the first real in-process caller of
+// UMS.Shared.Student.IStudentRecordProvisioner (ADM-21's terminal Student handoff), registered by
+// Flow #11 above. Registers this build's own fake UMS.Shared.Integrations.IProctoringProvider
+// (ADR-0018) - Admission is this shared contract's first consumer, so its own composition root owns
+// the provider-selection default per that ADR's own text.
+builder.Services.AddAdmissionModule(builder.Configuration);
+
 // Shared JWT authentication + permission-based authorization (ums-conventions.md: one shared
 // implementation, not per-module reinvention) - every module's protected endpoints gate through
 // this, never their own hand-rolled [Authorize] policy.
@@ -164,6 +179,19 @@ builder.Services.AddRateLimiter(options =>
         var partitionKey = httpContext.User.FindFirst(UmsClaimTypes.Subject)?.Value ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         return UmsRedisRateLimiterFactory.CreatePartition(redis, "finance-payment-initiate", partitionKey, permitLimit: 20, window: TimeSpan.FromMinutes(1));
     });
+
+    // requirement-spec.md admission §5/§11: "dedicated throttling on result-search ... endpoints
+    // that cannot be used to accidentally overload PostgreSQL" - public, keyed by client IP, same
+    // Redis-backed fixed-window mechanism as document-verify above. Generous relative to the
+    // §7.2 20,000-req/min result-day model since this limit protects against one caller hammering
+    // the endpoint, not the aggregate legitimate traffic ADR-0007's Redis-only serving path already
+    // absorbs.
+    options.AddPolicy("admission-result-search", (HttpContext httpContext) =>
+    {
+        var redis = httpContext.RequestServices.GetRequiredService<IConnectionMultiplexer>();
+        var partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return UmsRedisRateLimiterFactory.CreatePartition(redis, "admission-result-search", partitionKey, permitLimit: 120, window: TimeSpan.FromMinutes(1));
+    });
 });
 
 // Postgres readiness check today verifies raw connectivity only - each module adds its own
@@ -196,6 +224,7 @@ await app.Services.UseStudentModuleAsync();
 await app.Services.UseAcademicModuleAsync();
 await app.Services.UseLearningModuleAsync();
 await app.Services.UseFinanceModuleAsync();
+await app.Services.UseAdmissionModuleAsync();
 
 app.UseUmsObservability();
 app.UseUmsErrorHandling();
@@ -229,6 +258,7 @@ app.MapStudentModule();
 app.MapAcademicModule();
 app.MapLearningModule();
 app.MapFinanceModule();
+app.MapAdmissionModule();
 
 app.Run();
 

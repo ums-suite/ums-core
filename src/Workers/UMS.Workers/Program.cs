@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using UMS.Modules.Academic.Infrastructure;
+using UMS.Modules.Admission.Infrastructure;
 using UMS.Modules.Audit.Infrastructure;
 using UMS.Modules.Documents.Infrastructure;
 using UMS.Modules.Faculty.Infrastructure;
@@ -12,6 +13,7 @@ using UMS.Modules.Student.Infrastructure;
 using UMS.Shared.Observability;
 using UMS.Shared.Resilience;
 using UMS.Workers;
+using UMS.Workers.Admission;
 using UMS.Workers.AuditExports;
 using UMS.Workers.BulkDocumentGeneration;
 using UMS.Workers.Faculty;
@@ -106,6 +108,19 @@ builder.Services.AddFinanceModule(builder.Configuration);
 builder.Services.AddHostedService<StuckPaymentSweepWorker>();
 builder.Services.AddHostedService<FinanceNotificationRelayWorker>();
 
+// Admission (release/DEVELOPMENT_PLAN.md Flow #15) - four relays mirroring the registrations
+// immediately above: the Finance-payment-confirmation relay (design-decisions.md's own
+// cross-module-outbox-polling mechanism, reading finance.outbox_messages directly - Finance itself
+// is already registered above), the ExamAttempt timeout sweep (ADM-13), the PublishJob relay
+// (ADR-0007's write-through cache + ADM-18's bulk fan-out), and the Notifications relay. Depends on
+// Identity, Organization, Finance, Documents, and Notifications (module-boundaries.md), all already
+// registered above.
+builder.Services.AddAdmissionModule(builder.Configuration);
+builder.Services.AddHostedService<ApplicationPaymentConfirmationRelayWorker>();
+builder.Services.AddHostedService<ExamAttemptTimeoutSweepWorker>();
+builder.Services.AddHostedService<PublishJobRelayWorker>();
+builder.Services.AddHostedService<AdmissionNotificationRelayWorker>();
+
 // Same readiness contract as UMS.Host (ums-conventions.md, Observability: "UMS.Workers exposes
 // the same two endpoints"). Per-job outbox/queue-depth checks (ADR-0014) are added once the first
 // real worker (module-owned outbox relay) exists.
@@ -136,6 +151,7 @@ await app.Services.UseStudentModuleAsync();
 await app.Services.UseAcademicModuleAsync();
 await app.Services.UseLearningModuleAsync();
 await app.Services.UseFinanceModuleAsync();
+await app.Services.UseAdmissionModuleAsync();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
