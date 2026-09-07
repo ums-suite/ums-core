@@ -1,16 +1,20 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using UMS.Modules.Academic.Infrastructure;
 using UMS.Modules.Audit.Infrastructure;
 using UMS.Modules.Documents.Infrastructure;
 using UMS.Modules.Faculty.Infrastructure;
 using UMS.Modules.Identity.Infrastructure;
+using UMS.Modules.Learning.Infrastructure;
 using UMS.Modules.Notifications.Infrastructure;
 using UMS.Modules.Organization.Infrastructure;
+using UMS.Modules.Student.Infrastructure;
 using UMS.Shared.Observability;
 using UMS.Shared.Resilience;
 using UMS.Workers;
 using UMS.Workers.AuditExports;
 using UMS.Workers.BulkDocumentGeneration;
 using UMS.Workers.Faculty;
+using UMS.Workers.Learning;
 using UMS.Workers.Notifications;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -72,6 +76,24 @@ builder.Services.AddFacultyModule(builder.Configuration);
 builder.Services.AddHostedService<CourseAssignmentProjectionRelayWorker>();
 builder.Services.AddHostedService<LeaveNotificationRelayWorker>();
 
+// Learning (release/DEVELOPMENT_PLAN.md Flow #13) - three relays: LRN-8's PlagiarismCheck dispatch
+// (drains SubmissionCreated from Learning's own outbox, then drives every queued check through the
+// Polly-wrapped provider), LRN-2/LRN-9's hardCloseAt window-close sweep (closes elapsed Assignments
+// and re-enqueues any counted Submission still lacking a completed check), and the Notifications
+// fan-out relay. Student and Academic are registered immediately above it - neither for a worker of
+// its own, but because Learning's own DI resolves UMS.Shared.Academic.ICourseOfferingLookup, whose
+// real implementation in turn resolves UMS.Shared.Faculty.IFacultyMemberLookup and
+// UMS.Shared.Student.IStudentStatusChecker. Same reason Notifications' recipient lookup forces
+// Identity to be registered in this process (see that registration's own remark): a worker process
+// must satisfy every cross-module contract the modules it hosts actually resolve, exactly as the
+// Host does.
+builder.Services.AddStudentModule(builder.Configuration);
+builder.Services.AddAcademicModule(builder.Configuration);
+builder.Services.AddLearningModule(builder.Configuration);
+builder.Services.AddHostedService<PlagiarismCheckDispatchWorker>();
+builder.Services.AddHostedService<AssignmentWindowCloseWorker>();
+builder.Services.AddHostedService<LearningNotificationRelayWorker>();
+
 // Same readiness contract as UMS.Host (ums-conventions.md, Observability: "UMS.Workers exposes
 // the same two endpoints"). Per-job outbox/queue-depth checks (ADR-0014) are added once the first
 // real worker (module-owned outbox relay) exists.
@@ -98,6 +120,9 @@ await app.Services.UseOrganizationModuleAsync();
 await app.Services.UseIdentityModuleAsync();
 await app.Services.UseNotificationsModuleAsync();
 await app.Services.UseFacultyModuleAsync();
+await app.Services.UseStudentModuleAsync();
+await app.Services.UseAcademicModuleAsync();
+await app.Services.UseLearningModuleAsync();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });

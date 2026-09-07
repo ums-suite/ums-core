@@ -12,6 +12,8 @@ using UMS.Modules.Faculty.Api;
 using UMS.Modules.Faculty.Infrastructure;
 using UMS.Modules.Identity.Api;
 using UMS.Modules.Identity.Infrastructure;
+using UMS.Modules.Learning.Api;
+using UMS.Modules.Learning.Infrastructure;
 using UMS.Modules.Notifications.Api;
 using UMS.Modules.Notifications.Infrastructure;
 using UMS.Modules.Organization.Api;
@@ -92,6 +94,19 @@ builder.Services.AddStudentModule(builder.Configuration);
 // build depends on Academic.
 builder.Services.AddAcademicModule(builder.Configuration);
 
+// Learning (release/DEVELOPMENT_PLAN.md Flow #13) - depends on Identity, Organization, Academic,
+// Documents, and Notifications (module-boundaries.md), all registered above, so it must come after
+// Academic: it resolves UMS.Shared.Academic.ICourseOfferingLookup (CourseOffering existence,
+// Instructor identity, and enrollment membership - a new contract Academic's own Infrastructure
+// registers as part of this build), UMS.Shared.Documents.IUploadedArtifactRequester (LRN-5/LRN-13's
+// presigned Submission/LectureMaterial uploads - also new in this build),
+// UMS.Shared.Notifications.INotificationRequestIntake, and UMS.Shared.Audit.IAuditRecorder.
+// Registered last, as a leaf of the dependency graph - nothing else in this build depends on
+// Learning. Deliberately absent: any Academic-facing WRITE dependency (learning
+// design-decisions.md's "Cross-Module Feed of Assignment Scores into Academic's Grade" -
+// SubmissionEvaluated is a fan-out event only, which is what keeps the graph acyclic).
+builder.Services.AddLearningModule(builder.Configuration);
+
 // Shared JWT authentication + permission-based authorization (ums-conventions.md: one shared
 // implementation, not per-module reinvention) - every module's protected endpoints gate through
 // this, never their own hand-rolled [Authorize] policy.
@@ -156,6 +171,7 @@ await app.Services.UseNotificationsModuleAsync();
 await app.Services.UseFacultyModuleAsync();
 await app.Services.UseStudentModuleAsync();
 await app.Services.UseAcademicModuleAsync();
+await app.Services.UseLearningModuleAsync();
 
 app.UseUmsObservability();
 app.UseUmsErrorHandling();
@@ -187,6 +203,7 @@ app.MapNotificationsModule();
 app.MapFacultyModule();
 app.MapStudentModule();
 app.MapAcademicModule();
+app.MapLearningModule();
 
 app.Run();
 

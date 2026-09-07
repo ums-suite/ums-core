@@ -131,20 +131,40 @@ internal sealed class S3ObjectStorage : IObjectStorage, IDisposable
         return Task.FromResult(_client.GetPreSignedURL(request));
     }
 
+    /// <summary>
+    /// An existence probe, not a fetch: "the object isn't there" is an ORDINARY answer this method
+    /// reports as <see langword="null"/>, not an infrastructure failure.
+    ///
+    /// <para>
+    /// The <c>NotFound</c> is therefore caught INSIDE the resilience delegate, so Polly never sees
+    /// an exception for it at all. Catching it outside <c>ExecuteAsync</c> (as this method
+    /// originally did) still produced the right return value, but only after the retry strategy had
+    /// re-issued the same doomed HEAD three more times AND the circuit breaker had counted every one
+    /// of those as a failure - so a handful of confirm-before-upload calls (the normal case when a
+    /// client requests an upload slot and abandons it) was enough to trip the breaker and make every
+    /// subsequent object-storage call, genuine uploads included, throw <c>BrokenCircuitException</c>
+    /// for the whole break duration. Caught by Learning's (Flow #13) own upload-confirm integration
+    /// test, which is the first caller to hit "the object legitimately isn't there" as a routine
+    /// outcome; the resilience wrapper still applies in full to every genuine transport failure.
+    /// </para>
+    /// </summary>
     public async Task<ObjectMetadata?> TryGetMetadataAsync(string objectKey, CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var response = await _resilience.ExecuteAsync(
-                async ct => await _client.GetObjectMetadataAsync(new GetObjectMetadataRequest { BucketName = _bucket, Key = objectKey }, ct).ConfigureAwait(false),
-                cancellationToken).ConfigureAwait(false);
+        var response = await _resilience.ExecuteAsync(
+            async ct =>
+            {
+                try
+                {
+                    return await _client.GetObjectMetadataAsync(new GetObjectMetadataRequest { BucketName = _bucket, Key = objectKey }, ct).ConfigureAwait(false);
+                }
+                catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return null;
+                }
+            },
+            cancellationToken).ConfigureAwait(false);
 
-            return new ObjectMetadata(response.ContentLength, response.ETag);
-        }
-        catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
-        {
-            return null;
-        }
+        return response is null ? null : new ObjectMetadata(response.ContentLength, response.ETag);
     }
 
     public async Task DeleteAsync(string objectKey, CancellationToken cancellationToken = default)

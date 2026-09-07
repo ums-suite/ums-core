@@ -14,6 +14,9 @@
     <ProjectReference Include="..\..\UMS.Modules\Documents\UMS.Modules.Documents.Infrastructure\UMS.Modules.Documents.Infrastructure.csproj" />
     <ProjectReference Include="..\..\UMS.Modules\Faculty\UMS.Modules.Faculty.Infrastructure\UMS.Modules.Faculty.Infrastructure.csproj" />
     <ProjectReference Include="..\..\UMS.Modules\Identity\UMS.Modules.Identity.Infrastructure\UMS.Modules.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\UMS.Modules\Student\UMS.Modules.Student.Infrastructure\UMS.Modules.Student.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\UMS.Modules\Academic\UMS.Modules.Academic.Infrastructure\UMS.Modules.Academic.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\UMS.Modules\Learning\UMS.Modules.Learning.Infrastructure\UMS.Modules.Learning.Infrastructure.csproj" />
     <ProjectReference Include="..\..\UMS.Modules\Notifications\UMS.Modules.Notifications.Infrastructure\UMS.Modules.Notifications.Infrastructure.csproj" />
     <ProjectReference Include="..\..\UMS.Modules\Organization\UMS.Modules.Organization.Infrastructure\UMS.Modules.Organization.Infrastructure.csproj" />
   </ItemGroup>

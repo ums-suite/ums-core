@@ -20,5 +20,5 @@ internal sealed class StudentStatusCheckerAdapter(IStudentRepository students) :
     }
 
     private static StudentAcademicStanding ToStanding(Domain.Students.Student student) =>
-        new(student.Id.Value, student.DepartmentId, student.ProgramId, student.Status.ToString());
+        new(student.Id.Value, student.DepartmentId, student.ProgramId, student.Status.ToString(), student.IdentityUserId);
 }
