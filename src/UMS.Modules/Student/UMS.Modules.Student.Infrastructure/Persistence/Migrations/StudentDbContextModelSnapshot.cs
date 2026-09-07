@@ -24,6 +24,188 @@ namespace UMS.Modules.Student.Infrastructure.Persistence.Migrations
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("UMS.Modules.Student.Domain.BulkImport.StudentBulkImportJob", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ApprovedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("approved_at");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("FailedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("failed_count");
+
+                    b.Property<int>("InvalidRowCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("invalid_row_count");
+
+                    b.Property<int>("ProcessedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("processed_count");
+
+                    b.Property<Guid>("RequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<int>("SucceededCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("succeeded_count");
+
+                    b.Property<int>("TotalRows")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_rows");
+
+                    b.Property<int>("ValidRowCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("valid_row_count");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status")
+                        .HasDatabaseName("ix_student_bulk_import_jobs_status");
+
+                    b.ToTable("student_bulk_import_jobs", "student");
+                });
+
+            modelBuilder.Entity("UMS.Modules.Student.Domain.BulkImport.StudentBulkImportRow", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("text")
+                        .HasColumnName("error_message");
+
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("job_id");
+
+                    b.Property<string>("PayloadJson")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("payload_json");
+
+                    b.Property<Guid?>("ResultStudentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("result_student_id");
+
+                    b.Property<int>("RowNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("row_number");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobId", "RowNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_student_bulk_import_rows_job_row_number");
+
+                    b.HasIndex("JobId", "Status")
+                        .HasDatabaseName("ix_student_bulk_import_rows_job_status");
+
+                    b.ToTable("student_bulk_import_rows", "student");
+                });
+
+            modelBuilder.Entity("UMS.Modules.Student.Domain.StudentRequests.StudentRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.Property<Guid?>("DecidedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("decided_by_user_id");
+
+                    b.Property<string>("DecisionReason")
+                        .HasColumnType("text")
+                        .HasColumnName("decision_reason");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("details");
+
+                    b.Property<DateTimeOffset?>("FulfilledAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fulfilled_at");
+
+                    b.Property<Guid?>("GeneratedDocumentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("generated_document_id");
+
+                    b.Property<bool>("IsAgainstOwnDepartmentHead")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_against_own_department_head");
+
+                    b.Property<string>("RequestType")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("request_type");
+
+                    b.Property<Guid?>("ReviewScopeNodeId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("review_scope_node_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("student_id");
+
+                    b.Property<DateTimeOffset>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewScopeNodeId")
+                        .HasDatabaseName("ix_student_requests_review_scope_node_id");
+
+                    b.HasIndex("StudentId")
+                        .HasDatabaseName("ix_student_requests_student_id");
+
+                    b.HasIndex("StudentId", "RequestType")
+                        .IsUnique()
+                        .HasDatabaseName("ux_student_requests_student_id_request_type_open")
+                        .HasFilter("status IN ('Submitted', 'UnderReview')");
+
+                    b.ToTable("student_requests", "student");
+                });
+
             modelBuilder.Entity("UMS.Modules.Student.Domain.Students.Student", b =>
                 {
                     b.Property<Guid>("Id")

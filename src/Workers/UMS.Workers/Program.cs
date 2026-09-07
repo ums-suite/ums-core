@@ -20,6 +20,7 @@ using UMS.Workers.Faculty;
 using UMS.Workers.Finance;
 using UMS.Workers.Learning;
 using UMS.Workers.Notifications;
+using UMS.Workers.Student;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -97,6 +98,12 @@ builder.Services.AddLearningModule(builder.Configuration);
 builder.Services.AddHostedService<PlagiarismCheckDispatchWorker>();
 builder.Services.AddHostedService<AssignmentWindowCloseWorker>();
 builder.Services.AddHostedService<LearningNotificationRelayWorker>();
+
+// release/DEVELOPMENT_PLAN.md Flow #16 (Student - Admission Integration, STU-15) - the bulk-import
+// relay, mirroring Admission's/Documents' own bulk-job relay registrations above. Student is already
+// registered immediately above (for Learning's own cross-module chain); this worker is the first one
+// in this process to actually resolve Student's own repositories/services directly.
+builder.Services.AddHostedService<StudentBulkImportRelayWorker>();
 
 // Finance — Payment Core (release/DEVELOPMENT_PLAN.md Flow #14) - two relays mirroring Documents'/
 // Faculty's/Learning's own registrations immediately above: FIN-9/FIN-10's stuck-payment sweep

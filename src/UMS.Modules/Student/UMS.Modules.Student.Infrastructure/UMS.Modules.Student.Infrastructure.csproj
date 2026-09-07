@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Authorization\UMS.Shared.Authorization.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Outbox\UMS.Shared.Outbox.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Organization\UMS.Shared.Organization.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Academic\UMS.Shared.Academic.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Identity\UMS.Shared.Identity.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Documents\UMS.Shared.Documents.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Notifications\UMS.Shared.Notifications.csproj" />

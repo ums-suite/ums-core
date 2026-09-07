@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using UMS.Modules.Student.Application.Abstractions;
+using UMS.Modules.Student.Application.BulkImport;
 using UMS.Modules.Student.Application.Guardians;
+using UMS.Modules.Student.Application.StudentRequests;
 using UMS.Modules.Student.Application.Students;
 using UMS.Modules.Student.Infrastructure.Authorization;
 using UMS.Modules.Student.Infrastructure.CrossModule;
@@ -36,6 +38,9 @@ public static class DependencyInjection
         services.AddScoped<IStudentRepository, StudentRepository>();
         services.AddScoped<IOutboxReader, OutboxReader>();
         services.AddScoped<IStudentNumberSequence, StudentNumberSequence>();
+        services.AddScoped<IStudentRequestRepository, StudentRequestRepository>();
+        services.AddScoped<IStudentBulkImportJobRepository, StudentBulkImportJobRepository>();
+        services.AddScoped<IStudentBulkImportRowRepository, StudentBulkImportRowRepository>();
 
         services.AddSingleton<IClock, SystemClock>();
 
@@ -59,12 +64,23 @@ public static class DependencyInjection
         // real caller of this contract, registered directly (no stub-then-promote dance needed).
         services.AddScoped<IStudentStatusChecker, StudentStatusCheckerAdapter>();
 
+        // release/DEVELOPMENT_PLAN.md Flow #16 (Student - Admission Integration): STU-10's
+        // Academic transcript read + STU-11's Identity ScopeGrant/Organization hierarchy lookups -
+        // all three real cross-module implementations already exist (Academic Flow #12, Identity
+        // Flow #4, Organization Flow #6), so every one of these is a real integration, not a stub.
+        services.AddScoped<IAcademicTranscriptPort, AcademicTranscriptPortAdapter>();
+        services.AddScoped<IReviewerScopeDirectory, ReviewerScopeDirectoryAdapter>();
+        services.AddScoped<IDepartmentFacultyLookup, DepartmentFacultyLookupAdapter>();
+
         services.AddSingleton<IPermissionManifest, StudentPermissionManifest>();
 
         services.AddScoped<CreateStudentRecordService>();
         services.AddScoped<StudentProfileService>();
         services.AddScoped<StudentStatusService>();
         services.AddScoped<GuardianService>();
+        services.AddScoped<StudentRequestService>();
+        services.AddScoped<StudentBulkImportService>();
+        services.AddScoped<StudentBulkImportProcessingService>();
 
         return services;
     }

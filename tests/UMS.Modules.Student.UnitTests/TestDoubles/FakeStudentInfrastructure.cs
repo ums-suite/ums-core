@@ -47,6 +47,12 @@ public sealed class FakeUnitOfWork : IUnitOfWork
         // No-op - the optimistic-concurrency conflict path is exercised for real in the
         // integration suite (design-decisions.md's own layered-verification convention).
     }
+
+    public void DiscardChanges<TEntity>(TEntity entity)
+        where TEntity : class
+    {
+        // No-op for the same reason as SetExpectedVersion above.
+    }
 }
 
 public sealed class FakeAuditRecorder : IAuditRecorder
@@ -104,9 +110,17 @@ public sealed class FakeDocumentGenerationPort(bool succeeds = true) : IDocument
 {
     public List<RequestStudentIdCardRequest> Requests { get; } = [];
 
+    public List<RequestStudentTranscriptRequest> TranscriptRequests { get; } = [];
+
     public Task<DocumentGenerationOutcome> RequestIdCardAsync(RequestStudentIdCardRequest request, CancellationToken cancellationToken = default)
     {
         Requests.Add(request);
+        return Task.FromResult(succeeds ? new DocumentGenerationOutcome(true, Guid.NewGuid(), null) : new DocumentGenerationOutcome(false, null, "generation failed"));
+    }
+
+    public Task<DocumentGenerationOutcome> RequestTranscriptAsync(RequestStudentTranscriptRequest request, CancellationToken cancellationToken = default)
+    {
+        TranscriptRequests.Add(request);
         return Task.FromResult(succeeds ? new DocumentGenerationOutcome(true, Guid.NewGuid(), null) : new DocumentGenerationOutcome(false, null, "generation failed"));
     }
 }
@@ -136,6 +150,9 @@ public sealed class FakeStudentRepository : IStudentRepository
 
     public Task<Domain.Students.Student?> GetByOriginatingApplicationIdAsync(Guid originatingApplicationId, CancellationToken cancellationToken = default) =>
         Task.FromResult(_students.Values.FirstOrDefault(s => s.OriginatingApplicationId == originatingApplicationId));
+
+    public Task<Domain.Students.Student?> GetByStudentNumberAsync(string studentNumber, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_students.Values.FirstOrDefault(s => s.StudentNumber.Value == studentNumber));
 
     public void Add(Domain.Students.Student student) => Seed(student);
 }

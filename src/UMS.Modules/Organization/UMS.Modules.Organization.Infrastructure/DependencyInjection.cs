@@ -68,6 +68,10 @@ public static class DependencyInjection
         // in-process without depending on this assembly (module-boundaries.md, ADR-0002).
         services.AddScoped<IOrganizationNodeExistenceChecker, OrganizationNodeExistenceChecker>();
 
+        // STU-11: the one real implementation of the Department-&gt;Faculty walk-up Student's own
+        // grievance-escalation routing needs - see IOrganizationHierarchyQuery's own remarks.
+        services.AddScoped<IOrganizationHierarchyQuery, OrganizationHierarchyQuery>();
+
         // Shares the platform's one Redis connection (UMS.Shared.Resilience.AddUmsResilience), never a second multiplexer (ADR-0007).
         services.AddScoped<IOrganizationTreeCache, RedisOrganizationTreeCache>();
 

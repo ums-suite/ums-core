@@ -15,6 +15,8 @@ public static class StudentModule
         group.MapStudentProfileEndpoints();
         group.MapStudentStatusEndpoints();
         group.MapGuardianEndpoints();
+        group.MapStudentRequestEndpoints();
+        group.MapStudentBulkImportEndpoints();
 
         return endpoints;
     }

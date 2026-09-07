@@ -12,5 +12,7 @@ internal sealed class StudentPermissionManifest : IPermissionManifest
     [
         new(StudentPermissions.ProfileRead, "Read any Student's profile by id (admin/Registrar)."),
         new(StudentPermissions.StatusChange, "Change a Student's status (admin/Registrar) - audited, reason required."),
+        new(StudentPermissions.RequestReview, "Review (approve/reject) a StudentRequest (Department Head/Registrar) - scope-checked for Grievance requests."),
+        new(StudentPermissions.BulkImportExecute, "Execute and monitor the async bulk student import job (admin-only)."),
     ];
 }

@@ -64,6 +64,10 @@ public static class DependencyInjection
         // Student resolves to provision a login-capable User as a side effect of CreateStudentRecord.
         services.AddScoped<IUserProvisioner, UMS.Modules.Identity.Infrastructure.Student.UserProvisionerAdapter>();
 
+        // release/DEVELOPMENT_PLAN.md Flow #16 (Student - Admission Integration, STU-11) - resolves
+        // ADR-0006 ScopeGrant holders for Student's own grievance-routing/reviewer-visibility gate.
+        services.AddScoped<IScopeGrantDirectory, UMS.Modules.Identity.Infrastructure.CrossModule.ScopeGrantDirectory>();
+
         services.Configure<Argon2idOptions>(configuration.GetSection("Identity:Argon2"));
         services.AddSingleton<IPasswordHasher, Argon2idPasswordHasher>();
 
