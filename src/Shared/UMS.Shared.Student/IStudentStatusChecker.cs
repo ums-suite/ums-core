@@ -51,4 +51,15 @@ public interface IStudentStatusChecker
 /// <param name="DepartmentId">Organization Department reference.</param>
 /// <param name="ProgramId">Academic Program reference - Academic's own credit-limit gate resolves the Program's configured maximum against this.</param>
 /// <param name="Status">`Enrolled`/`Active`/`Graduated`/`Suspended`/`Transferred` - Academic accepts a new Enrollment only while this is `Active`.</param>
-public sealed record StudentAcademicStanding(Guid StudentId, Guid DepartmentId, Guid ProgramId, string Status);
+/// <param name="IdentityUserId">
+/// The Identity <c>User</c> backing this Student's login, or <see langword="null"/> if provisioning
+/// never completed (STU-2's user provisioning is best-effort - see <c>Student.IdentityUserId</c>'s
+/// own remarks). Added by release/DEVELOPMENT_PLAN.md Flow #13 (Learning, LRN-3): granting a
+/// per-Student <c>SubmissionExtension</c> names the Student, but the resulting
+/// <c>AssignmentExtensionGranted</c> fan-out needs a notification recipient - and a Learning caller
+/// must never take a Student dependency of its own (module-boundaries.md), so the reverse mapping
+/// has to be available on the one contract Academic already resolves on its behalf. A trailing
+/// optional parameter, so no existing construction site changes (ums-conventions.md, API
+/// Versioning: "adding a new response field" is non-breaking).
+/// </param>
+public sealed record StudentAcademicStanding(Guid StudentId, Guid DepartmentId, Guid ProgramId, string Status, Guid? IdentityUserId = null);

@@ -60,6 +60,12 @@ public static class DependencyInjection
         // UMS.Shared.Student.IStudentStatusChecker (added by THIS build - see that interface's own
         // remarks). Academic is the last-built module with no downstream stub-then-promote gap of
         // its own to close.
+        // release/DEVELOPMENT_PLAN.md Flow #13 (Learning, LRN-1) - Academic's first OUTWARD-facing
+        // read contract. Learning resolves CourseOffering existence, Instructor identity, and
+        // enrollment membership exclusively through this, never against Faculty/Student directly
+        // (learning requirement-spec.md §9.1) and never a direct schema join (ADR-0002).
+        services.AddScoped<UMS.Shared.Academic.ICourseOfferingLookup, CrossModule.CourseOfferingLookupAdapter>();
+
         services.AddScoped<ProgramService>();
         services.AddScoped<CourseService>();
         services.AddScoped<CurriculumService>();

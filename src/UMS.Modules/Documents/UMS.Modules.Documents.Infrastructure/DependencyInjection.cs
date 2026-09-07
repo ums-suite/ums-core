@@ -67,6 +67,12 @@ public static class DependencyInjection
         // Student resolves to request the student ID card as a side effect of CreateStudentRecord.
         services.AddScoped<UMS.Shared.Documents.IDocumentGenerationRequester, UMS.Modules.Documents.Infrastructure.Student.DocumentGenerationRequesterAdapter>();
 
+        // release/DEVELOPMENT_PLAN.md Flow #13 (Learning, LRN-5/LRN-13) - the cross-module inbound
+        // presigned-upload path Learning resolves for Submission files and LectureMaterial
+        // videos/documents. Same shape as the STU-3 registration immediately above; Documents' own
+        // HTTP upload endpoints and their document.document.generate gate are unchanged.
+        services.AddScoped<UMS.Shared.Documents.IUploadedArtifactRequester, UMS.Modules.Documents.Infrastructure.Uploads.UploadedArtifactRequesterAdapter>();
+
         services.AddScoped<GeneratedDocumentPipeline>();
         services.AddScoped<DocumentTemplateService>();
         services.AddScoped<GenerateDocumentService>();
