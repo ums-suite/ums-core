@@ -130,6 +130,16 @@ public sealed class CourseAssignmentProjectionTests(FacultyApiFixture fixture)
         Assert.Equal("Active", assignments![0].Status);
     }
 
+    /// <summary>
+    /// Academic (release/DEVELOPMENT_PLAN.md Flow #12) has now landed, so this fixture's own
+    /// "CREATE TABLE IF NOT EXISTS" is superseded in practice by Academic's own real EF Core
+    /// migration - which already runs against this same WebApplicationFactory's Postgres
+    /// container at Host startup, since this suite boots the full <c>UMS.Host</c> pipeline and
+    /// Academic is registered there like every other module. This method is kept (not deleted)
+    /// so the suite still passes against an EARLIER checkout where Academic doesn't exist yet
+    /// (Flow #12 not applied) - the real migration's shape is a strict superset of this one's
+    /// five original columns, so "IF NOT EXISTS" against the real table is always a no-op today.
+    /// </summary>
     private async Task EnsureFabricatedAcademicOutboxTableAsync()
     {
         await using var connection = new NpgsqlConnection(fixture.PostgresConnectionString);
@@ -148,12 +158,13 @@ public sealed class CourseAssignmentProjectionTests(FacultyApiFixture fixture)
         await command.ExecuteNonQueryAsync();
     }
 
+    /// <summary>Explicitly specifies <c>attempt_count</c> (defaulting to 0) since Academic's own real table (see <see cref="EnsureFabricatedAcademicOutboxTableAsync"/>'s own remarks) declares that column <c>NOT NULL</c> with no database-level default - <c>UMS.Shared.Outbox.OutboxMessage.Create</c>'s own application-level default (0) is what every real Academic-side insert relies on instead.</summary>
     private async Task InsertFabricatedEventAsync(Guid eventId, string eventType, Guid facultyMemberId, Guid courseOfferingId, DateTimeOffset occurredAt)
     {
         await using var connection = new NpgsqlConnection(fixture.PostgresConnectionString);
         await connection.OpenAsync();
         await using var command = connection.CreateCommand();
-        command.CommandText = "INSERT INTO academic.outbox_messages (id, event_type, payload_json, occurred_at, recorded_at) VALUES (@id, @eventType, @payload, @occurredAt, @recordedAt)";
+        command.CommandText = "INSERT INTO academic.outbox_messages (id, event_type, payload_json, occurred_at, recorded_at, attempt_count) VALUES (@id, @eventType, @payload, @occurredAt, @recordedAt, 0)";
         command.Parameters.AddWithValue("id", eventId);
         command.Parameters.AddWithValue("eventType", eventType);
         command.Parameters.AddWithValue("payload", JsonSerializer.Serialize(new InstructorAssignmentPayload(facultyMemberId, courseOfferingId)));

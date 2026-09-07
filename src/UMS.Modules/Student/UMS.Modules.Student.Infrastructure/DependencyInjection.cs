@@ -54,6 +54,11 @@ public static class DependencyInjection
         // STU-1: the outward-facing shared contract Admission (Flow #15) will call once it exists.
         services.AddScoped<IStudentRecordProvisioner, StudentRecordProvisionerAdapter>();
 
+        // ACD-6 (release/DEVELOPMENT_PLAN.md Flow #12, Academic): the outward-facing query
+        // contract Academic's Enrollment gate calls to validate Student status/scope - the first
+        // real caller of this contract, registered directly (no stub-then-promote dance needed).
+        services.AddScoped<IStudentStatusChecker, StudentStatusCheckerAdapter>();
+
         services.AddSingleton<IPermissionManifest, StudentPermissionManifest>();
 
         services.AddScoped<CreateStudentRecordService>();

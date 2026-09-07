@@ -51,6 +51,11 @@
          cross-module side effects. -->
     <ProjectReference Include="..\UMS.Modules\Student\UMS.Modules.Student.Api\UMS.Modules.Student.Api.csproj" />
     <ProjectReference Include="..\UMS.Modules\Student\UMS.Modules.Student.Infrastructure\UMS.Modules.Student.Infrastructure.csproj" />
+
+    <!-- Academic (release/DEVELOPMENT_PLAN.md Flow #12) - depends on Identity, Organization,
+         Student, and Faculty (module-boundaries.md), all already registered above. -->
+    <ProjectReference Include="..\UMS.Modules\Academic\UMS.Modules.Academic.Api\UMS.Modules.Academic.Api.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Academic\UMS.Modules.Academic.Infrastructure\UMS.Modules.Academic.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

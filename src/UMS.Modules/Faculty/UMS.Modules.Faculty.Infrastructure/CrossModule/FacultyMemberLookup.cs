@@ -18,4 +18,16 @@ internal sealed class FacultyMemberLookup(FacultyDbContext context) : IFacultyMe
             ? null
             : new FacultyMemberSummary(facultyMember.Id.Value, facultyMember.DepartmentId, facultyMember.Status.ToString());
     }
+
+    public async Task<FacultyMemberSummary?> GetByUserIdAsync(Guid identityUserId, CancellationToken cancellationToken = default)
+    {
+        var facultyMember = await context.FacultyMembers
+            .AsNoTracking()
+            .FirstOrDefaultAsync(f => f.UserId == identityUserId, cancellationToken)
+            .ConfigureAwait(false);
+
+        return facultyMember is null
+            ? null
+            : new FacultyMemberSummary(facultyMember.Id.Value, facultyMember.DepartmentId, facultyMember.Status.ToString());
+    }
 }

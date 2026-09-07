@@ -2,6 +2,8 @@ using HealthChecks.NpgSql;
 using HealthChecks.Redis;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using StackExchange.Redis;
+using UMS.Modules.Academic.Api;
+using UMS.Modules.Academic.Infrastructure;
 using UMS.Modules.Audit.Api;
 using UMS.Modules.Audit.Infrastructure;
 using UMS.Modules.Documents.Api;
@@ -74,8 +76,21 @@ builder.Services.AddFacultyModule(builder.Configuration);
 // (STU-3), UMS.Shared.Notifications.INotificationRequestIntake (STU-4), and
 // UMS.Shared.Organization.IOrganizationNodeExistenceChecker (Department reference validation).
 // Academic (Flow #12) does not exist yet, so the Program existence check is a permissive stub -
-// see StudentModule's own StubProgramExistenceChecker remarks.
+// see StudentModule's own StubProgramExistenceChecker remarks. NOTE: this stub is intentionally
+// NOT promoted by Academic's own build below - module-boundaries.md's dependency table states
+// Student depends on Identity/Organization/Admission only, never Academic; promoting this stub
+// would create an Academic->Student->Academic cycle ADR-0002 forbids (see
+// UMS.Shared.Student.IStudentStatusChecker's own remarks for the full reasoning).
 builder.Services.AddStudentModule(builder.Configuration);
+
+// Academic (release/DEVELOPMENT_PLAN.md Flow #12) - depends on Identity, Organization, Student,
+// and Faculty (module-boundaries.md), all registered above: resolves
+// UMS.Shared.Organization.IOrganizationNodeExistenceChecker (Department reference validation),
+// UMS.Shared.Faculty.IFacultyMemberLookup (instructor eligibility/attendance-permission gate), and
+// UMS.Shared.Student.IStudentStatusChecker (Enrollment's Active-status gate - a new contract this
+// build adds to Student's own Infrastructure layer). Registered last since nothing else in this
+// build depends on Academic.
+builder.Services.AddAcademicModule(builder.Configuration);
 
 // Shared JWT authentication + permission-based authorization (ums-conventions.md: one shared
 // implementation, not per-module reinvention) - every module's protected endpoints gate through
@@ -140,6 +155,7 @@ await app.Services.UseDocumentsModuleAsync();
 await app.Services.UseNotificationsModuleAsync();
 await app.Services.UseFacultyModuleAsync();
 await app.Services.UseStudentModuleAsync();
+await app.Services.UseAcademicModuleAsync();
 
 app.UseUmsObservability();
 app.UseUmsErrorHandling();
@@ -170,6 +186,7 @@ app.MapDocumentsModule();
 app.MapNotificationsModule();
 app.MapFacultyModule();
 app.MapStudentModule();
+app.MapAcademicModule();
 
 app.Run();
 
