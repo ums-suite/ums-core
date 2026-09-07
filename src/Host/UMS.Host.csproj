@@ -63,6 +63,13 @@
          dependency graph, called only by Reporting's own documented read-only exception. -->
     <ProjectReference Include="..\UMS.Modules\Learning\UMS.Modules.Learning.Api\UMS.Modules.Learning.Api.csproj" />
     <ProjectReference Include="..\UMS.Modules\Learning\UMS.Modules.Learning.Infrastructure\UMS.Modules.Learning.Infrastructure.csproj" />
+
+    <!-- Finance — Payment Core (release/DEVELOPMENT_PLAN.md Flow #14) - depends on Identity only
+         (module-boundaries.md: "Finance intentionally has no outgoing domain dependency"), plus
+         Documents (FIN-15 receipt generation) and Notifications (FIN-16), both already registered
+         above. -->
+    <ProjectReference Include="..\UMS.Modules\Finance\UMS.Modules.Finance.Api\UMS.Modules.Finance.Api.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Finance\UMS.Modules.Finance.Infrastructure\UMS.Modules.Finance.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -3,6 +3,7 @@ using UMS.Modules.Academic.Infrastructure;
 using UMS.Modules.Audit.Infrastructure;
 using UMS.Modules.Documents.Infrastructure;
 using UMS.Modules.Faculty.Infrastructure;
+using UMS.Modules.Finance.Infrastructure;
 using UMS.Modules.Identity.Infrastructure;
 using UMS.Modules.Learning.Infrastructure;
 using UMS.Modules.Notifications.Infrastructure;
@@ -14,6 +15,7 @@ using UMS.Workers;
 using UMS.Workers.AuditExports;
 using UMS.Workers.BulkDocumentGeneration;
 using UMS.Workers.Faculty;
+using UMS.Workers.Finance;
 using UMS.Workers.Learning;
 using UMS.Workers.Notifications;
 
@@ -94,6 +96,16 @@ builder.Services.AddHostedService<PlagiarismCheckDispatchWorker>();
 builder.Services.AddHostedService<AssignmentWindowCloseWorker>();
 builder.Services.AddHostedService<LearningNotificationRelayWorker>();
 
+// Finance — Payment Core (release/DEVELOPMENT_PLAN.md Flow #14) - two relays mirroring Documents'/
+// Faculty's/Learning's own registrations immediately above: FIN-9/FIN-10's stuck-payment sweep
+// (checks the fake gateway directly for any Payment stuck Initiated/Pending past its own timeout)
+// and FIN-16's Notifications fan-out relay. Depends on Identity only (module-boundaries.md),
+// already registered above, plus Documents (FIN-15) and Notifications (FIN-16), both registered
+// above too.
+builder.Services.AddFinanceModule(builder.Configuration);
+builder.Services.AddHostedService<StuckPaymentSweepWorker>();
+builder.Services.AddHostedService<FinanceNotificationRelayWorker>();
+
 // Same readiness contract as UMS.Host (ums-conventions.md, Observability: "UMS.Workers exposes
 // the same two endpoints"). Per-job outbox/queue-depth checks (ADR-0014) are added once the first
 // real worker (module-owned outbox relay) exists.
@@ -123,6 +135,7 @@ await app.Services.UseFacultyModuleAsync();
 await app.Services.UseStudentModuleAsync();
 await app.Services.UseAcademicModuleAsync();
 await app.Services.UseLearningModuleAsync();
+await app.Services.UseFinanceModuleAsync();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
