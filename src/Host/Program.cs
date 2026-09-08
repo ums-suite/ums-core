@@ -8,6 +8,8 @@ using UMS.Modules.Admission.Api;
 using UMS.Modules.Admission.Infrastructure;
 using UMS.Modules.Audit.Api;
 using UMS.Modules.Audit.Infrastructure;
+using UMS.Modules.Content.Api;
+using UMS.Modules.Content.Infrastructure;
 using UMS.Modules.Documents.Api;
 using UMS.Modules.Documents.Infrastructure;
 using UMS.Modules.Faculty.Api;
@@ -155,6 +157,17 @@ builder.Services.AddHostelModule(builder.Configuration);
 // INotificationRequestIntake, all real by this point.
 builder.Services.AddLibraryModule(builder.Configuration);
 
+// Content (Flow #24) - depends on Identity, Organization, Notifications, and Documents
+// (module-boundaries.md), all already registered above: resolves
+// UMS.Shared.Identity.IScopeGrantDirectory (CNT-3 audience/Organization-node scoping, reused
+// directly rather than a parallel scoping model), UMS.Shared.Organization.
+// IOrganizationNodeExistenceChecker (CNT-10 homepage "featured Program" reference resolution,
+// degrading to "unavailable" rather than throwing per edge-cases.md), UMS.Shared.Documents.
+// IUploadedArtifactRequester (CNT-11 Download file reference - the exact pattern Learning
+// established as this contract's first real caller), and UMS.Shared.Notifications.
+// INotificationRequestIntake (CNT-13 urgent-notice fan-out), all real by this point.
+builder.Services.AddContentModule(builder.Configuration);
+
 // Reporting (release/DEVELOPMENT_PLAN.md Flow #22) - ADR-0013 permits this one module to depend on
 // every other module's own READ-ONLY cross-module reporting-query contract
 // (UMS.Shared.Academic/Admission/Finance/Faculty/Hostel/Library.IXxxReportingQuery), all real by
@@ -257,6 +270,7 @@ await app.Services.UseFinanceModuleAsync();
 await app.Services.UseAdmissionModuleAsync();
 await app.Services.UseHostelModuleAsync();
 await app.Services.UseLibraryModuleAsync();
+await app.Services.UseContentModuleAsync();
 await app.Services.UseReportingModuleAsync();
 
 app.UseUmsObservability();
@@ -294,6 +308,7 @@ app.MapFinanceModule();
 app.MapAdmissionModule();
 app.MapHostelModule();
 app.MapLibraryModule();
+app.MapContentModule();
 app.MapReportingModule();
 
 app.Run();

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using UMS.Modules.Academic.Infrastructure;
 using UMS.Modules.Admission.Infrastructure;
 using UMS.Modules.Audit.Infrastructure;
+using UMS.Modules.Content.Infrastructure;
 using UMS.Modules.Documents.Infrastructure;
 using UMS.Modules.Faculty.Infrastructure;
 using UMS.Modules.Finance.Infrastructure;
@@ -19,6 +20,7 @@ using UMS.Workers;
 using UMS.Workers.Admission;
 using UMS.Workers.AuditExports;
 using UMS.Workers.BulkDocumentGeneration;
+using UMS.Workers.Content;
 using UMS.Workers.Faculty;
 using UMS.Workers.Finance;
 using UMS.Workers.Hostel;
@@ -170,6 +172,17 @@ builder.Services.AddHostedService<LibraryOverdueDetectionSweepWorker>();
 builder.Services.AddHostedService<LibraryFineAccrualSweepWorker>();
 builder.Services.AddHostedService<LibraryNotificationRelayWorker>();
 
+// Content (Flow #24) - CNT-4/CNT-9/CNT-11's shared idempotent, lock-free scan-and-transition sweep
+// (design-decisions.md "Scheduled-Publish Job Exactly-Once Execution Mechanism" - no Redis
+// lease/lock, unlike Reporting's MetricRefreshJobBase below), plus CNT-13's urgent-notice
+// Notifications fan-out relay. Depends on Identity, Organization, Notifications, and Documents
+// (module-boundaries.md), all already registered above.
+builder.Services.AddContentModule(builder.Configuration);
+builder.Services.AddHostedService<NoticeSchedulingSweepWorker>();
+builder.Services.AddHostedService<BannerSchedulingSweepWorker>();
+builder.Services.AddHostedService<DownloadResourceSchedulingSweepWorker>();
+builder.Services.AddHostedService<NoticeNotificationRelayWorker>();
+
 // Reporting (release/DEVELOPMENT_PLAN.md Flow #22) - ADR-0013's "depends on everything" module:
 // six independent per-dashboard-family refresh workers (RPT-1/RPT-4..9, design-decisions.md - no
 // single mega-scheduler), each acquiring RPT-1's Redis lease before running, plus the
@@ -218,6 +231,7 @@ await app.Services.UseFinanceModuleAsync();
 await app.Services.UseAdmissionModuleAsync();
 await app.Services.UseHostelModuleAsync();
 await app.Services.UseLibraryModuleAsync();
+await app.Services.UseContentModuleAsync();
 await app.Services.UseReportingModuleAsync();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
