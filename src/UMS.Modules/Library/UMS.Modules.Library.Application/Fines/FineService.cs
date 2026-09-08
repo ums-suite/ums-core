@@ -20,6 +20,12 @@ public sealed class FineService(
     public async Task<IReadOnlyList<FineDto>> GetByBorrowerAsync(Guid borrowerId, CancellationToken cancellationToken = default) =>
         (await fines.GetByBorrowerAsync(borrowerId, cancellationToken).ConfigureAwait(false)).Select(ToDto).ToList();
 
+    public async Task<Result<FineDto>> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var fine = await fines.GetByIdAsync(new FineId(id), cancellationToken).ConfigureAwait(false);
+        return fine is null ? Error.NotFound("fine.not_found", $"No Fine exists with id '{id}'.") : ToDto(fine);
+    }
+
     /// <summary>
     /// LIB-13: design-decisions.md "Fine-Settlement Consistency - Money-Criticality Tier" - a direct,
     /// transaction-coupled in-process command call to Finance (ADR-0003), never an event.
