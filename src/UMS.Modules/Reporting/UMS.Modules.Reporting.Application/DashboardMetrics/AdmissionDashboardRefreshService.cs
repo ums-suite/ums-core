@@ -34,6 +34,13 @@ public sealed class AdmissionDashboardRefreshService(
     public static readonly TimeSpan NearRealTimeInterval = TimeSpan.FromMinutes(10);
     public static readonly TimeSpan NightlyInterval = TimeSpan.FromHours(24);
 
+    protected override string MetricKey => MetricKeyValue;
+
+    protected override string DisplayName => "Admission Dashboard";
+
+    /// <summary>Generous relative to even the near-real-time 5-15 minute cadence, so a legitimately slow run is never mistaken for crashed mid-campaign.</summary>
+    protected override TimeSpan LeaseTtl => TimeSpan.FromMinutes(8);
+
     /// <summary>
     /// edge-cases.md "cadence-determination query itself fails ... falls back to whatever cadence
     /// the job was already running at" - treated identically to any other source-unavailability
@@ -52,13 +59,6 @@ public sealed class AdmissionDashboardRefreshService(
             return currentInterval;
         }
     }
-
-    protected override string MetricKey => MetricKeyValue;
-
-    protected override string DisplayName => "Admission Dashboard";
-
-    /// <summary>Generous relative to even the near-real-time 5-15 minute cadence, so a legitimately slow run is never mistaken for crashed mid-campaign.</summary>
-    protected override TimeSpan LeaseTtl => TimeSpan.FromMinutes(8);
 
     protected override async Task<string> ComputePayloadJsonAsync(CancellationToken cancellationToken)
     {

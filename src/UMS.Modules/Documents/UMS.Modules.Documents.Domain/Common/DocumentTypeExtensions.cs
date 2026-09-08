@@ -8,6 +8,15 @@ namespace UMS.Modules.Documents.Domain.Common;
 /// <see cref="DocumentType.MeritList"/> is official-record - kept as an explicit predicate here
 /// (not "== MeritList" inverted at every call site) so a future seventh type must make a
 /// conscious decision rather than silently defaulting one way or the other.
+///
+/// <para>
+/// <see cref="DocumentType.RegulatoryReport"/> (added for reporting RPT-13) is also <c>false</c>:
+/// it is an administrative/aggregate artifact, not a personal academic or financial record, and its
+/// own request/completion is already synchronously audited by
+/// <c>UMS.Modules.Reporting.Application.RegulatoryReports.RegulatoryReportRunService</c>/
+/// <c>RegulatoryReportRunExecutionService</c> - a second audit entry here would be a duplicate, not
+/// a gap.
+/// </para>
 /// </summary>
 public static class DocumentTypeExtensions
 {
@@ -19,6 +28,7 @@ public static class DocumentTypeExtensions
         DocumentType.Receipt => true,
         DocumentType.IdCard => true,
         DocumentType.MeritList => false,
+        DocumentType.RegulatoryReport => false,
         _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unrecognized DocumentType."),
     };
 }

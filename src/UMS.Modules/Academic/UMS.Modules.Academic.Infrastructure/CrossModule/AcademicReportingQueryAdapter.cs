@@ -48,7 +48,14 @@ internal sealed class AcademicReportingQueryAdapter(AcademicDbContext context) :
         var gradeDistribution = await GetGradeDistributionAsync(cancellationToken).ConfigureAwait(false);
 
         var gradedCount = await context.Enrollments.CountAsync(e => e.Grade != null && e.Grade.LetterGrade != null, cancellationToken).ConfigureAwait(false);
-        var passingCount = await context.Enrollments.CountAsync(e => e.Grade != null && e.Grade.LetterGrade != null && e.Grade.LetterGrade.ToUpper() != "F", cancellationToken).ConfigureAwait(false);
+
+        // Ordinal, non-culture letter-grade comparison ('F'/'f' are the only two failing-grade
+        // spellings this codebase's Grade aggregate ever writes - see Grade.IsPassing's own ordinal
+        // OrdinalIgnoreCase check) - written as a plain equality pair rather than a
+        // case-conversion call so this predicate stays cleanly SQL-translatable (CA1304/CA1862
+        // both flag ToUpper/ToUpperInvariant-based comparisons even inside an IQueryable
+        // expression tree, where no CLR culture is actually involved).
+        var passingCount = await context.Enrollments.CountAsync(e => e.Grade != null && e.Grade.LetterGrade != null && e.Grade.LetterGrade != "F" && e.Grade.LetterGrade != "f", cancellationToken).ConfigureAwait(false);
 
         var passRate = gradedCount > 0 ? Math.Round((decimal)passingCount / gradedCount * 100m, 2) : 0m;
         var dropoutRate = totalEnrollments > 0 ? Math.Round((decimal)droppedEnrollments / totalEnrollments * 100m, 2) : 0m;
@@ -121,7 +128,7 @@ internal sealed class AcademicReportingQueryAdapter(AcademicDbContext context) :
                 CourseOfferingId = g.Key,
                 EnrolledCount = g.Count(),
                 GradedCount = g.Count(e => e.Grade != null && e.Grade.LetterGrade != null),
-                PassingCount = g.Count(e => e.Grade != null && e.Grade.LetterGrade != null && e.Grade.LetterGrade.ToUpper() != "F"),
+                PassingCount = g.Count(e => e.Grade != null && e.Grade.LetterGrade != null && e.Grade.LetterGrade != "F" && e.Grade.LetterGrade != "f"),
             })
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 

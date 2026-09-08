@@ -26,6 +26,8 @@ using UMS.Modules.Notifications.Api;
 using UMS.Modules.Notifications.Infrastructure;
 using UMS.Modules.Organization.Api;
 using UMS.Modules.Organization.Infrastructure;
+using UMS.Modules.Reporting.Api;
+using UMS.Modules.Reporting.Infrastructure;
 using UMS.Modules.Student.Api;
 using UMS.Modules.Student.Infrastructure;
 using UMS.Shared.Authorization;
@@ -153,6 +155,15 @@ builder.Services.AddHostelModule(builder.Configuration);
 // INotificationRequestIntake, all real by this point.
 builder.Services.AddLibraryModule(builder.Configuration);
 
+// Reporting (release/DEVELOPMENT_PLAN.md Flow #22) - ADR-0013 permits this one module to depend on
+// every other module's own READ-ONLY cross-module reporting-query contract
+// (UMS.Shared.Academic/Admission/Finance/Faculty/Hostel/Library.IXxxReportingQuery), all real by
+// this point since every source module above already registers its own adapter. Also resolves
+// UMS.Shared.Documents.IDocumentGenerationRequester (RPT-13 PDF generation) and
+// UMS.Shared.Notifications.INotificationRequestIntake (run completion/failure), both registered
+// above. Registered last, as the platform's own designated "depends on everything" leaf.
+builder.Services.AddReportingModule(builder.Configuration);
+
 // Shared JWT authentication + permission-based authorization (ums-conventions.md: one shared
 // implementation, not per-module reinvention) - every module's protected endpoints gate through
 // this, never their own hand-rolled [Authorize] policy.
@@ -246,6 +257,7 @@ await app.Services.UseFinanceModuleAsync();
 await app.Services.UseAdmissionModuleAsync();
 await app.Services.UseHostelModuleAsync();
 await app.Services.UseLibraryModuleAsync();
+await app.Services.UseReportingModuleAsync();
 
 app.UseUmsObservability();
 app.UseUmsErrorHandling();
@@ -282,6 +294,7 @@ app.MapFinanceModule();
 app.MapAdmissionModule();
 app.MapHostelModule();
 app.MapLibraryModule();
+app.MapReportingModule();
 
 app.Run();
 

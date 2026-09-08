@@ -87,6 +87,13 @@
          (module-boundaries.md), all already registered above. -->
     <ProjectReference Include="..\UMS.Modules\Library\UMS.Modules.Library.Api\UMS.Modules.Library.Api.csproj" />
     <ProjectReference Include="..\UMS.Modules\Library\UMS.Modules.Library.Infrastructure\UMS.Modules.Library.Infrastructure.csproj" />
+
+    <!-- Reporting (release/DEVELOPMENT_PLAN.md Flow #22) - ADR-0013 permits it to depend on every
+         other module's own READ-ONLY cross-module reporting-query contract (Academic, Admission,
+         Finance, Faculty, Hostel, Library); registered last since it depends on all of the above,
+         plus Documents (RPT-13 PDF generation) and Notifications, both already registered above. -->
+    <ProjectReference Include="..\UMS.Modules\Reporting\UMS.Modules.Reporting.Api\UMS.Modules.Reporting.Api.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Reporting\UMS.Modules.Reporting.Infrastructure\UMS.Modules.Reporting.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

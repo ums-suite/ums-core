@@ -11,6 +11,7 @@ using UMS.Modules.Learning.Infrastructure;
 using UMS.Modules.Library.Infrastructure;
 using UMS.Modules.Notifications.Infrastructure;
 using UMS.Modules.Organization.Infrastructure;
+using UMS.Modules.Reporting.Infrastructure;
 using UMS.Modules.Student.Infrastructure;
 using UMS.Shared.Observability;
 using UMS.Shared.Resilience;
@@ -24,6 +25,7 @@ using UMS.Workers.Hostel;
 using UMS.Workers.Learning;
 using UMS.Workers.Library;
 using UMS.Workers.Notifications;
+using UMS.Workers.Reporting;
 using UMS.Workers.Student;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -168,6 +170,21 @@ builder.Services.AddHostedService<LibraryOverdueDetectionSweepWorker>();
 builder.Services.AddHostedService<LibraryFineAccrualSweepWorker>();
 builder.Services.AddHostedService<LibraryNotificationRelayWorker>();
 
+// Reporting (release/DEVELOPMENT_PLAN.md Flow #22) - ADR-0013's "depends on everything" module:
+// six independent per-dashboard-family refresh workers (RPT-1/RPT-4..9, design-decisions.md - no
+// single mega-scheduler), each acquiring RPT-1's Redis lease before running, plus the
+// RegulatoryReportRun poll relay (RPT-12/RPT-13). Depends on Academic, Admission, Finance, Faculty,
+// Hostel, and Library's own read-only reporting-query contracts, Documents (RPT-13 PDF generation),
+// and Notifications, all already registered above.
+builder.Services.AddReportingModule(builder.Configuration);
+builder.Services.AddHostedService<AcademicMetricRefreshWorker>();
+builder.Services.AddHostedService<AdmissionMetricRefreshWorker>();
+builder.Services.AddHostedService<FinancialMetricRefreshWorker>();
+builder.Services.AddHostedService<FacultyMetricRefreshWorker>();
+builder.Services.AddHostedService<HostelMetricRefreshWorker>();
+builder.Services.AddHostedService<LibraryMetricRefreshWorker>();
+builder.Services.AddHostedService<RegulatoryReportRunRelayWorker>();
+
 // Same readiness contract as UMS.Host (ums-conventions.md, Observability: "UMS.Workers exposes
 // the same two endpoints"). Per-job outbox/queue-depth checks (ADR-0014) are added once the first
 // real worker (module-owned outbox relay) exists.
@@ -201,6 +218,7 @@ await app.Services.UseFinanceModuleAsync();
 await app.Services.UseAdmissionModuleAsync();
 await app.Services.UseHostelModuleAsync();
 await app.Services.UseLibraryModuleAsync();
+await app.Services.UseReportingModuleAsync();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
