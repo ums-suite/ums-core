@@ -30,6 +30,7 @@ public sealed class AllocationFeeConfirmationService(
     IUnitOfWork unitOfWork,
     IClock clock)
 {
+    /// <summary>Applies one Finance <c>PaymentSucceeded</c>/<c>PaymentFailed</c> event to whichever Hostel Allocation its InvoiceId belongs to, if any.</summary>
     /// <returns><see langword="true"/> if this event belonged to a Hostel Allocation (processed or intentionally ignored); <see langword="false"/> if it matches no known Allocation (a different module's own Finance usage).</returns>
     public async Task<bool> ApplyAsync(Guid invoiceId, string eventType, CancellationToken cancellationToken = default)
     {
