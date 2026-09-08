@@ -13,6 +13,11 @@ namespace UMS.Modules.Content.Domain.Events;
 /// The bilingual-completeness gate (design-decisions.md) applies at <see cref="Create"/> and
 /// <see cref="UpdateContent"/> directly, rather than at a publish transition Event doesn't have -
 /// the same shared <see cref="BilingualCompletenessGate"/> function Notice's three call sites use.
+/// <b>Because Event has no Draft state to stage translations in before the gate fires</b> (unlike
+/// Notice, where translations can be added any time before <c>Schedule</c>/<c>Publish</c>),
+/// <see cref="Create"/> accepts an OPTIONAL inline Bengali translation so a Public-audience Event
+/// can be created bilingual-complete in one call - without this, no Public Event could ever be
+/// created at all, since no translation row can exist before the aggregate itself does.
 /// </para>
 /// </summary>
 public sealed class Event : AggregateRoot<EventId>
@@ -63,25 +68,64 @@ public sealed class Event : AggregateRoot<EventId>
 
     public IReadOnlyCollection<EventTranslation> Translations => _translations.AsReadOnly();
 
-    public static Result<Event> Create(string title, string body, string? locationLabel, ContentAudience audience, Guid? organizationNodeId, DateTimeOffset startAt, DateTimeOffset endAt, Guid createdByUserId, DateTimeOffset now)
+    /// <param name="translationLanguageCode">
+    /// Optional - supplies a non-English translation (in practice, `"bn"`) at creation time, the
+    /// ONLY way a Public-audience Event can ever satisfy the bilingual-completeness gate at
+    /// <see cref="Create"/> (see class remarks). Omit for an Admin-only Event, which is exempt.
+    /// </param>
+    public static Result<Event> Create(
+        string title,
+        string body,
+        string? locationLabel,
+        ContentAudience audience,
+        Guid? organizationNodeId,
+        DateTimeOffset startAt,
+        DateTimeOffset endAt,
+        Guid createdByUserId,
+        DateTimeOffset now,
+        string? translationLanguageCode = null,
+        string? translationTitle = null,
+        string? translationBody = null,
+        string? translationLocationLabel = null)
     {
-        var validation = Validate(title, body, audience, startAt, endAt, []);
+        var validation = ValidateFields(title, body, audience, startAt, endAt);
         if (validation.IsFailure)
         {
             return validation.Error!;
         }
 
-        return new Event(EventId.New(), title.Trim(), body.Trim(), string.IsNullOrWhiteSpace(locationLabel) ? null : locationLabel.Trim(), audience, organizationNodeId, startAt, endAt, createdByUserId, now);
+        var calendarEvent = new Event(EventId.New(), title.Trim(), body.Trim(), string.IsNullOrWhiteSpace(locationLabel) ? null : locationLabel.Trim(), audience, organizationNodeId, startAt, endAt, createdByUserId, now);
+
+        if (!string.IsNullOrWhiteSpace(translationLanguageCode))
+        {
+            var translated = calendarEvent.UpsertTranslation(translationLanguageCode, translationTitle ?? string.Empty, translationBody ?? string.Empty, translationLocationLabel, createdByUserId, now);
+            if (translated.IsFailure)
+            {
+                return translated.Error!;
+            }
+        }
+
+        if (!BilingualCompletenessGate.IsSatisfied(audience, calendarEvent.Title, calendarEvent.Body, calendarEvent._translations.Select(t => t.LanguageCode)))
+        {
+            return Error.Validation("event.bilingual_incomplete", "A Public-audience Event requires both English and Bengali translations.");
+        }
+
+        return calendarEvent;
     }
 
     public bool IsUpcoming(DateTimeOffset now) => EndAt >= now;
 
     public Result UpdateContent(string title, string body, string? locationLabel, DateTimeOffset startAt, DateTimeOffset endAt, Guid actorUserId, DateTimeOffset now)
     {
-        var validation = Validate(title, body, Audience, startAt, endAt, _translations.Select(t => t.LanguageCode));
+        var validation = ValidateFields(title, body, Audience, startAt, endAt);
         if (validation.IsFailure)
         {
-            return Result.Failure(validation.Error!);
+            return validation;
+        }
+
+        if (!BilingualCompletenessGate.IsSatisfied(Audience, title, body, _translations.Select(t => t.LanguageCode)))
+        {
+            return Result.Failure(Error.Validation("event.bilingual_incomplete", "A Public-audience Event requires both English and Bengali translations."));
         }
 
         Title = title.Trim();
@@ -117,7 +161,7 @@ public sealed class Event : AggregateRoot<EventId>
         return Result.Success();
     }
 
-    private static Result Validate(string title, string body, ContentAudience audience, DateTimeOffset startAt, DateTimeOffset endAt, IEnumerable<string> translatedLanguageCodes)
+    private static Result ValidateFields(string title, string body, ContentAudience audience, DateTimeOffset startAt, DateTimeOffset endAt)
     {
         if (string.IsNullOrWhiteSpace(title))
         {
@@ -137,11 +181,6 @@ public sealed class Event : AggregateRoot<EventId>
         if (endAt <= startAt)
         {
             return Result.Failure(Error.Validation("event.invalid_window", "An Event's end date/time must be strictly after its start date/time."));
-        }
-
-        if (!BilingualCompletenessGate.IsSatisfied(audience, title, body, translatedLanguageCodes))
-        {
-            return Result.Failure(Error.Validation("event.bilingual_incomplete", "A Public-audience Event requires both English and Bengali translations."));
         }
 
         return Result.Success();

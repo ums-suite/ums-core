@@ -37,7 +37,7 @@ internal static class EventEndpoints
                 return audience.Error!.ToProblemResult(httpContext);
             }
 
-            var result = await service.CreateAsync(request.Title, request.Body, request.LocationLabel, audience.Value, request.OrganizationNodeId, request.StartAt, request.EndAt, httpContext.User.GetUserId(), cancellationToken).ConfigureAwait(false);
+            var result = await service.CreateAsync(request.Title, request.Body, request.LocationLabel, audience.Value, request.OrganizationNodeId, request.StartAt, request.EndAt, httpContext.User.GetUserId(), request.TranslationLanguageCode, request.TranslationTitle, request.TranslationBody, request.TranslationLocationLabel, cancellationToken).ConfigureAwait(false);
             return result.Match<IResult>(dto => Results.Created($"/api/v1/content/events/{dto.Id}", dto), error => error.ToProblemResult(httpContext));
         }).RequirePermission(ContentPermissions.EventWrite);
 

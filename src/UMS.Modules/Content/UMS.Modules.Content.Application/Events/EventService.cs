@@ -36,9 +36,15 @@ public sealed class EventService(IEventRepository events, IUnitOfWork unitOfWork
             calendarEvent.Version);
     }
 
-    public async Task<Result<EventDto>> CreateAsync(string title, string body, string? locationLabel, ContentAudience audience, Guid? organizationNodeId, DateTimeOffset startAt, DateTimeOffset endAt, Guid actorUserId, CancellationToken cancellationToken = default)
+    /// <param name="translationLanguageCode">
+    /// Optional inline non-English (`"bn"`) translation, supplied at creation time - see
+    /// <see cref="Event.Create"/>'s own remarks on why this is the only way a Public-audience Event
+    /// can ever be created bilingual-complete (it has no Draft state to add a translation into
+    /// afterward before some later publish transition, since it has none).
+    /// </param>
+    public async Task<Result<EventDto>> CreateAsync(string title, string body, string? locationLabel, ContentAudience audience, Guid? organizationNodeId, DateTimeOffset startAt, DateTimeOffset endAt, Guid actorUserId, string? translationLanguageCode = null, string? translationTitle = null, string? translationBody = null, string? translationLocationLabel = null, CancellationToken cancellationToken = default)
     {
-        var created = Event.Create(title, body, locationLabel, audience, organizationNodeId, startAt, endAt, actorUserId, clock.UtcNow);
+        var created = Event.Create(title, body, locationLabel, audience, organizationNodeId, startAt, endAt, actorUserId, clock.UtcNow, translationLanguageCode, translationTitle, translationBody, translationLocationLabel);
         if (created.IsFailure)
         {
             return created.Error!;
