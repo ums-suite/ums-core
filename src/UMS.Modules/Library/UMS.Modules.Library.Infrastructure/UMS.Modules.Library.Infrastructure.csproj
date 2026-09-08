@@ -29,6 +29,7 @@
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Student\UMS.Shared.Student.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Faculty\UMS.Shared.Faculty.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Finance\UMS.Shared.Finance.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Library\UMS.Shared.Library.csproj" />
   </ItemGroup>
 
 </Project>

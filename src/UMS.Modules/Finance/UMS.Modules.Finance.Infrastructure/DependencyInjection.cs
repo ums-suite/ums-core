@@ -65,6 +65,10 @@ public static class DependencyInjection
         services.AddScoped<INotificationRequestPublisher, NotificationRequestIntakeAdapter>();
         services.AddScoped<IInvoiceRequester, InvoiceRequesterAdapter>();
 
+        // RPT-3 (release/DEVELOPMENT_PLAN.md Flow #22, Reporting): Finance's own outward-facing
+        // reporting-query contract - see CrossModule.FinanceReportingQueryAdapter's own remarks.
+        services.AddScoped<UMS.Shared.Finance.IFinanceReportingQuery, CrossModule.FinanceReportingQueryAdapter>();
+
         RegisterFakePaymentGateway(services, configuration);
 
         services.AddScoped<FeeStructureService>();

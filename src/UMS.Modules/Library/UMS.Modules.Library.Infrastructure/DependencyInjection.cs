@@ -60,6 +60,10 @@ public static class DependencyInjection
         services.AddScoped<IStudentStatusEventSource, StudentOutboxEventSource>();
         services.AddScoped<IFacultyStatusEventSource, FacultyOutboxEventSource>();
 
+        // RPT-3 (release/DEVELOPMENT_PLAN.md Flow #22, Reporting): Library's own outward-facing
+        // reporting-query contract - see CrossModule.LibraryReportingQueryAdapter's own remarks.
+        services.AddScoped<UMS.Shared.Library.ILibraryReportingQuery, CrossModule.LibraryReportingQueryAdapter>();
+
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IPermissionManifest, LibraryPermissionManifest>();
         services.AddSingleton(new LibraryOptions

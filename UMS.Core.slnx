@@ -20,6 +20,9 @@
     <Project Path="src/Shared/UMS.Shared.Academic/UMS.Shared.Academic.csproj" />
     <Project Path="src/Shared/UMS.Shared.Finance/UMS.Shared.Finance.csproj" />
     <Project Path="src/Shared/UMS.Shared.Integrations/UMS.Shared.Integrations.csproj" />
+    <Project Path="src/Shared/UMS.Shared.Admission/UMS.Shared.Admission.csproj" />
+    <Project Path="src/Shared/UMS.Shared.Hostel/UMS.Shared.Hostel.csproj" />
+    <Project Path="src/Shared/UMS.Shared.Library/UMS.Shared.Library.csproj" />
   </Folder>
   <Folder Name="/src/Workers/">
     <Project Path="src/Workers/UMS.Workers/UMS.Workers.csproj" />
@@ -102,6 +105,12 @@
     <Project Path="src/UMS.Modules/Library/UMS.Modules.Library.Infrastructure/UMS.Modules.Library.Infrastructure.csproj" />
     <Project Path="src/UMS.Modules/Library/UMS.Modules.Library.Api/UMS.Modules.Library.Api.csproj" />
   </Folder>
+  <Folder Name="/src/UMS.Modules/Reporting/">
+    <Project Path="src/UMS.Modules/Reporting/UMS.Modules.Reporting.Domain/UMS.Modules.Reporting.Domain.csproj" />
+    <Project Path="src/UMS.Modules/Reporting/UMS.Modules.Reporting.Application/UMS.Modules.Reporting.Application.csproj" />
+    <Project Path="src/UMS.Modules/Reporting/UMS.Modules.Reporting.Infrastructure/UMS.Modules.Reporting.Infrastructure.csproj" />
+    <Project Path="src/UMS.Modules/Reporting/UMS.Modules.Reporting.Api/UMS.Modules.Reporting.Api.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/UMS.Shared.Tests/UMS.Shared.Tests.csproj" />
     <Project Path="tests/UMS.Modules.Identity.UnitTests/UMS.Modules.Identity.UnitTests.csproj" />
@@ -130,6 +139,8 @@
     <Project Path="tests/UMS.Modules.Hostel.IntegrationTests/UMS.Modules.Hostel.IntegrationTests.csproj" />
     <Project Path="tests/UMS.Modules.Library.UnitTests/UMS.Modules.Library.UnitTests.csproj" />
     <Project Path="tests/UMS.Modules.Library.IntegrationTests/UMS.Modules.Library.IntegrationTests.csproj" />
+    <Project Path="tests/UMS.Modules.Reporting.UnitTests/UMS.Modules.Reporting.UnitTests.csproj" />
+    <Project Path="tests/UMS.Modules.Reporting.IntegrationTests/UMS.Modules.Reporting.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/ArchitectureTests/">
     <Project Path="tests/ArchitectureTests/UMS.ArchitectureTests.csproj" />

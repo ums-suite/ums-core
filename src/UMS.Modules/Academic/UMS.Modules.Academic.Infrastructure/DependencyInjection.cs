@@ -66,6 +66,13 @@ public static class DependencyInjection
         // (learning requirement-spec.md §9.1) and never a direct schema join (ADR-0002).
         services.AddScoped<UMS.Shared.Academic.ICourseOfferingLookup, CrossModule.CourseOfferingLookupAdapter>();
 
+        // RPT-3 (release/DEVELOPMENT_PLAN.md Flow #22, Reporting): Academic's own outward-facing
+        // reporting-query contract - see CrossModule.AcademicReportingQueryAdapter's own remarks.
+        // No consumer exists yet in THIS module's own build order (Reporting/Flow #22 is registered
+        // after Academic in Host/Workers) - same "contract ships before its first real caller"
+        // posture ICourseOfferingLookup itself once had for Learning.
+        services.AddScoped<UMS.Shared.Academic.IAcademicReportingQuery, CrossModule.AcademicReportingQueryAdapter>();
+
         // release/DEVELOPMENT_PLAN.md Flow #16 (Student - Admission Integration, STU-10) - Student's
         // transcript-request StudentRequest resolves this in-process instead of calling Academic's
         // own GET /students/{id}/transcript endpoint over HTTP (ADR-0003).

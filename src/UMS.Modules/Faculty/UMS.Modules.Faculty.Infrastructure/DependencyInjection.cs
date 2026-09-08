@@ -54,6 +54,10 @@ public static class DependencyInjection
         services.AddScoped<IFacultyEmploymentChecker, FacultyEmploymentChecker>();
         services.AddScoped<IFacultyMemberLookup, FacultyMemberLookup>();
 
+        // RPT-3 (release/DEVELOPMENT_PLAN.md Flow #22, Reporting): Faculty's own outward-facing
+        // reporting-query contract - see CrossModule.FacultyReportingQueryAdapter's own remarks.
+        services.AddScoped<UMS.Shared.Faculty.IFacultyReportingQuery, CrossModule.FacultyReportingQueryAdapter>();
+
         services.AddSingleton<IPermissionManifest, FacultyPermissionManifest>();
 
         services.AddScoped<FacultyMemberService>();

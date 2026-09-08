@@ -59,6 +59,10 @@ public static class DependencyInjection
         services.AddScoped<IFinancePaymentEventSource, FinanceOutboxEventSource>();
         services.AddScoped<IStudentStatusEventSource, StudentOutboxEventSource>();
 
+        // RPT-3 (release/DEVELOPMENT_PLAN.md Flow #22, Reporting): Hostel's own outward-facing
+        // reporting-query contract - see CrossModule.HostelReportingQueryAdapter's own remarks.
+        services.AddScoped<UMS.Shared.Hostel.IHostelReportingQuery, CrossModule.HostelReportingQueryAdapter>();
+
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IPermissionManifest, HostelPermissionManifest>();
         services.AddSingleton(new HostelOptions
