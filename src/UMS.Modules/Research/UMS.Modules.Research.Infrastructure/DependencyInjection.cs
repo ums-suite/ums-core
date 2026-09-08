@@ -50,6 +50,7 @@ public static class DependencyInjection
         services.AddScoped<IInstitutionalRepositoryEntryRepository, InstitutionalRepositoryEntryRepository>();
         services.AddScoped<IOutboxReader, OutboxReader>();
         services.AddScoped<IFacultyStatusEventSource, FacultyOutboxEventSource>();
+        services.AddScoped<UMS.Shared.Research.IResearchReportingQuery, CrossModule.ResearchReportingQueryAdapter>();
 
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IPermissionManifest, ResearchPermissionManifest>();
