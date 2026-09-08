@@ -1,9 +1,11 @@
 using UMS.Shared.Academic;
 using UMS.Shared.Admission;
+using UMS.Shared.Content;
 using UMS.Shared.Faculty;
 using UMS.Shared.Finance;
 using UMS.Shared.Hostel;
 using UMS.Shared.Library;
+using UMS.Shared.Research;
 
 namespace UMS.Modules.Reporting.IntegrationTests.Infrastructure;
 
@@ -79,4 +81,20 @@ public sealed class FakeLibraryReportingQuery : ILibraryReportingQuery
     public LibraryDashboardSnapshot Snapshot { get; set; } = new(5000, 6000, 1200, 45, 3200m, []);
 
     public Task<LibraryDashboardSnapshot> GetDashboardSnapshotAsync(CancellationToken cancellationToken = default) => Task.FromResult(Snapshot);
+}
+
+/// <summary>Flow #26: fakes the real <c>ResearchReportingQueryAdapter</c> - see this class's own file remarks for why Research's/Content's real implementations are exercised against a real Postgres instead, in their own module's IntegrationTests suite.</summary>
+public sealed class FakeResearchReportingQuery : IResearchReportingQuery
+{
+    public ResearchDashboardSnapshot Snapshot { get; set; } = new(40, 15, new Dictionary<string, decimal> { ["USD"] = 500_000m, ["BDT"] = 2_000_000m }, 120, 30);
+
+    public Task<ResearchDashboardSnapshot> GetDashboardSnapshotAsync(CancellationToken cancellationToken = default) => Task.FromResult(Snapshot);
+}
+
+/// <summary>Flow #26: fakes the real <c>ContentReportingQueryAdapter</c> - the seventh, Content-owned admin dashboard (a deliberate scope extension, see <c>UMS.Shared.Content.IContentReportingQuery</c>'s own remarks).</summary>
+public sealed class FakeContentReportingQuery : IContentReportingQuery
+{
+    public ContentDashboardSnapshot Snapshot { get; set; } = new(25, 4, 8, 60);
+
+    public Task<ContentDashboardSnapshot> GetDashboardSnapshotAsync(CancellationToken cancellationToken = default) => Task.FromResult(Snapshot);
 }

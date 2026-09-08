@@ -15,6 +15,7 @@ internal sealed class ReportingPermissionManifest : IPermissionManifest
         new(ReportingPermissions.DashboardReadFaculty, "View the Faculty dashboard (Admin)."),
         new(ReportingPermissions.DashboardReadHostel, "View the Hostel dashboard (Admin)."),
         new(ReportingPermissions.DashboardReadLibrary, "View the Library dashboard (Admin)."),
+        new(ReportingPermissions.DashboardReadContent, "View the Content dashboard (Admin)."),
         new(ReportingPermissions.RegulatoryManage, "Create/edit RegulatoryReportDefinitions (Admin)."),
         new(ReportingPermissions.RegulatoryRun, "Enqueue a RegulatoryReportRun and view its status (Admin)."),
     ];

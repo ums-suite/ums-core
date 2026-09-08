@@ -18,7 +18,10 @@ public sealed class RegulatoryReportRunExecutionServiceIntegrationTests(Reportin
 {
     private static AuditContext NewAuditContext() => new(Guid.NewGuid(), "127.0.0.1", Guid.NewGuid().ToString());
 
-    private async Task<Guid> EnqueueRunAsync(RegulatoryReportFormat format, string sourceQueryReferencesJson = "[\"academic-dashboard\"]")
+    private Task<Guid> EnqueueRunAsync(RegulatoryReportFormat format, string sourceQueryReferencesJson = "[\"academic-dashboard\"]") =>
+        EnqueueRunAsync(format, sourceQueryReferencesJson, [new FieldSelectionRequest("TotalEnrollments", "Total Enrollments")]);
+
+    private async Task<Guid> EnqueueRunAsync(RegulatoryReportFormat format, string sourceQueryReferencesJson, IReadOnlyList<FieldSelectionRequest> fields)
     {
         using var scope = fixture.Services.CreateScope();
         var definitions = scope.ServiceProvider.GetRequiredService<RegulatoryReportDefinitionService>();
@@ -26,7 +29,7 @@ public sealed class RegulatoryReportRunExecutionServiceIntegrationTests(Reportin
             new CreateRegulatoryReportDefinitionRequest(
                 $"Execution Test {Guid.NewGuid():N}",
                 RegulatoryReportCategory.StudentEnrollment,
-                [new FieldSelectionRequest("TotalEnrollments", "Total Enrollments")],
+                fields,
                 "{}",
                 sourceQueryReferencesJson,
                 RegulatoryReportFormat.Pdf | RegulatoryReportFormat.Csv | RegulatoryReportFormat.Excel),
@@ -107,6 +110,32 @@ public sealed class RegulatoryReportRunExecutionServiceIntegrationTests(Reportin
         Assert.Equal(RegulatoryReportRunStatus.Failed, run!.Status);
         Assert.Contains("Excel", run.ErrorMessage);
         Assert.Contains(fixture.NotificationIntake.Submitted, s => s.EventType == "RegulatoryReportRunFailed");
+    }
+
+    [Fact]
+    public async Task A_Research_category_run_resolves_its_fields_from_the_real_research_dashboard_metric()
+    {
+        // Flow #26: the "Research" regulatory category's SourceQueryReferences now names
+        // "research-dashboard" (replacing the base-flow "faculty-dashboard" proxy) - this exercises
+        // that exact resolution path end to end, mirroring the Academic case above.
+        using (var seedScope = fixture.Services.CreateScope())
+        {
+            var researchRefresh = seedScope.ServiceProvider.GetRequiredService<UMS.Modules.Reporting.Application.DashboardMetrics.ResearchDashboardRefreshService>();
+            await researchRefresh.RunAsync();
+        }
+
+        var runId = await EnqueueRunAsync(RegulatoryReportFormat.Csv, "[\"research-dashboard\"]", [new FieldSelectionRequest("TotalActiveGrants", "Total Active Grants")]);
+
+        using var scope = fixture.Services.CreateScope();
+        var runs = scope.ServiceProvider.GetRequiredService<IRegulatoryReportRunRepository>();
+        var executionService = scope.ServiceProvider.GetRequiredService<RegulatoryReportRunExecutionService>();
+
+        var run = await runs.GetByIdAsync(new RegulatoryReportRunId(runId));
+        await executionService.ExecuteAsync(run!);
+
+        Assert.Equal(RegulatoryReportRunStatus.Completed, run!.Status);
+        Assert.NotNull(run.ResultCsvContent);
+        Assert.Contains(fixture.ResearchQuery.Snapshot.TotalActiveGrants.ToString(System.Globalization.CultureInfo.InvariantCulture), run.ResultCsvContent);
     }
 
     [Fact]

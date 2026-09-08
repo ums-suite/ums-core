@@ -52,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<IHomepageSectionRepository, HomepageSectionRepository>();
         services.AddScoped<IDownloadResourceRepository, DownloadResourceRepository>();
         services.AddScoped<IOutboxReader, OutboxReader>();
+        services.AddScoped<UMS.Shared.Content.IContentReportingQuery, CrossModule.ContentReportingQueryAdapter>();
 
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IPermissionManifest, ContentPermissionManifest>();

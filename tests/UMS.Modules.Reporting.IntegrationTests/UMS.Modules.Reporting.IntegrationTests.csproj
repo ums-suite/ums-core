@@ -36,6 +36,8 @@
     <ProjectReference Include="..\..\src\Shared\UMS.Shared.Faculty\UMS.Shared.Faculty.csproj" />
     <ProjectReference Include="..\..\src\Shared\UMS.Shared.Hostel\UMS.Shared.Hostel.csproj" />
     <ProjectReference Include="..\..\src\Shared\UMS.Shared.Library\UMS.Shared.Library.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Research\UMS.Shared.Research.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Content\UMS.Shared.Content.csproj" />
   </ItemGroup>
 
 </Project>
