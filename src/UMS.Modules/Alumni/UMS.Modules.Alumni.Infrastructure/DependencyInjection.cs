@@ -5,6 +5,7 @@ using UMS.Modules.Alumni.Application.Abstractions;
 using UMS.Modules.Alumni.Application.Alumni;
 using UMS.Modules.Alumni.Application.AlumniEvents;
 using UMS.Modules.Alumni.Application.Chapters;
+using UMS.Modules.Alumni.Application.Common;
 using UMS.Modules.Alumni.Application.Donations;
 using UMS.Modules.Alumni.Application.Jobs;
 using UMS.Modules.Alumni.Application.Mentorship;
@@ -63,6 +64,7 @@ public static class DependencyInjection
         services.AddSingleton<IPermissionManifest, AlumniPermissionManifest>();
         services.AddScoped<IAlumniNotificationPublisher, NotificationRequestIntakeAdapter>();
 
+        services.AddScoped<CallerAlumnusResolver>();
         services.AddScoped<AlumnusService>();
         services.AddScoped<ChapterService>();
         services.AddScoped<JobPostingService>();

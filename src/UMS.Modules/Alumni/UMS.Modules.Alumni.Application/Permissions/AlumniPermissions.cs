@@ -27,6 +27,9 @@ public static class AlumniPermissions
 
     public const string MentorshipCoordinate = "alumni.mentorship.coordinate";
 
+    /// <summary>Create/close a DonationCampaign - a lightweight fundraising-goal reference (requirement-spec.md §2.4), reasonably grouped with the same back-office capability class as chapter/job moderation rather than left ungated.</summary>
+    public const string CampaignManage = "alumni.campaign.manage";
+
     /// <summary>Internal reconciliation/support view of an anonymous Donation's real donor identity (requirement-spec.md §4 "Anonymity is display-only").</summary>
     public const string DonationReconcile = "alumni.donation.reconcile";
 }
