@@ -25,6 +25,7 @@
     <ProjectReference Include="..\..\UMS.Modules\Library\UMS.Modules.Library.Infrastructure\UMS.Modules.Library.Infrastructure.csproj" />
     <ProjectReference Include="..\..\UMS.Modules\Content\UMS.Modules.Content.Infrastructure\UMS.Modules.Content.Infrastructure.csproj" />
     <ProjectReference Include="..\..\UMS.Modules\Research\UMS.Modules.Research.Infrastructure\UMS.Modules.Research.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\UMS.Modules\Alumni\UMS.Modules.Alumni.Infrastructure\UMS.Modules.Alumni.Infrastructure.csproj" />
     <ProjectReference Include="..\..\UMS.Modules\Reporting\UMS.Modules.Reporting.Infrastructure\UMS.Modules.Reporting.Infrastructure.csproj" />
   </ItemGroup>
 

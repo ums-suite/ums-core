@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using UMS.Modules.Academic.Infrastructure;
 using UMS.Modules.Admission.Infrastructure;
+using UMS.Modules.Alumni.Infrastructure;
 using UMS.Modules.Audit.Infrastructure;
 using UMS.Modules.Content.Infrastructure;
 using UMS.Modules.Documents.Infrastructure;
@@ -19,6 +20,7 @@ using UMS.Shared.Observability;
 using UMS.Shared.Resilience;
 using UMS.Workers;
 using UMS.Workers.Admission;
+using UMS.Workers.Alumni;
 using UMS.Workers.AuditExports;
 using UMS.Workers.BulkDocumentGeneration;
 using UMS.Workers.Content;
@@ -196,6 +198,19 @@ builder.Services.AddResearchModule(builder.Configuration);
 builder.Services.AddHostedService<ResearchEmbargoLiftSweepWorker>();
 builder.Services.AddHostedService<ResearchFacultyStatusRelayWorker>();
 builder.Services.AddHostedService<ResearchNotificationRelayWorker>();
+
+// Alumni (Flow #29) - five background pieces: ALM-1's StudentGraduated relay (polls Student's own
+// outbox, mirroring ResearchFacultyStatusRelayWorker's own shape), ALM-9's Finance-payment relay
+// (polls finance.outbox_messages, mirroring ApplicationPaymentConfirmationRelayWorker exactly),
+// ALM-6's JobPosting expiry sweep (mirrors Content's own NoticeSchedulingSweepWorker), ALM-10's
+// recurring-donation scheduler, and the ALM-15 Notifications fan-out relay. Depends on Identity,
+// Student (via UMS.Shared.Student.IStudentStatusChecker), and Finance - all already registered above.
+builder.Services.AddAlumniModule(builder.Configuration);
+builder.Services.AddHostedService<AlumniStudentGraduatedRelayWorker>();
+builder.Services.AddHostedService<AlumniFinancePaymentRelayWorker>();
+builder.Services.AddHostedService<JobPostingExpirySweepWorker>();
+builder.Services.AddHostedService<RecurringDonationSchedulerWorker>();
+builder.Services.AddHostedService<AlumniNotificationRelayWorker>();
 
 // Reporting (release/DEVELOPMENT_PLAN.md Flow #22, topped up by Flow #26 "Reporting - Content &
 // Research top-up") - ADR-0013's "depends on everything" module: eight independent
