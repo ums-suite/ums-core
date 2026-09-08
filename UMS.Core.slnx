@@ -96,6 +96,12 @@
     <Project Path="src/UMS.Modules/Hostel/UMS.Modules.Hostel.Infrastructure/UMS.Modules.Hostel.Infrastructure.csproj" />
     <Project Path="src/UMS.Modules/Hostel/UMS.Modules.Hostel.Api/UMS.Modules.Hostel.Api.csproj" />
   </Folder>
+  <Folder Name="/src/UMS.Modules/Library/">
+    <Project Path="src/UMS.Modules/Library/UMS.Modules.Library.Domain/UMS.Modules.Library.Domain.csproj" />
+    <Project Path="src/UMS.Modules/Library/UMS.Modules.Library.Application/UMS.Modules.Library.Application.csproj" />
+    <Project Path="src/UMS.Modules/Library/UMS.Modules.Library.Infrastructure/UMS.Modules.Library.Infrastructure.csproj" />
+    <Project Path="src/UMS.Modules/Library/UMS.Modules.Library.Api/UMS.Modules.Library.Api.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/UMS.Shared.Tests/UMS.Shared.Tests.csproj" />
     <Project Path="tests/UMS.Modules.Identity.UnitTests/UMS.Modules.Identity.UnitTests.csproj" />
@@ -122,6 +128,8 @@
     <Project Path="tests/UMS.Modules.Admission.IntegrationTests/UMS.Modules.Admission.IntegrationTests.csproj" />
     <Project Path="tests/UMS.Modules.Hostel.UnitTests/UMS.Modules.Hostel.UnitTests.csproj" />
     <Project Path="tests/UMS.Modules.Hostel.IntegrationTests/UMS.Modules.Hostel.IntegrationTests.csproj" />
+    <Project Path="tests/UMS.Modules.Library.UnitTests/UMS.Modules.Library.UnitTests.csproj" />
+    <Project Path="tests/UMS.Modules.Library.IntegrationTests/UMS.Modules.Library.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/ArchitectureTests/">
     <Project Path="tests/ArchitectureTests/UMS.ArchitectureTests.csproj" />

@@ -20,6 +20,8 @@ using UMS.Modules.Identity.Api;
 using UMS.Modules.Identity.Infrastructure;
 using UMS.Modules.Learning.Api;
 using UMS.Modules.Learning.Infrastructure;
+using UMS.Modules.Library.Api;
+using UMS.Modules.Library.Infrastructure;
 using UMS.Modules.Notifications.Api;
 using UMS.Modules.Notifications.Infrastructure;
 using UMS.Modules.Organization.Api;
@@ -144,6 +146,13 @@ builder.Services.AddAdmissionModule(builder.Configuration);
 // from Organization's academic ones).
 builder.Services.AddHostelModule(builder.Configuration);
 
+// Library (Flow #20) - depends on Identity, Student, Faculty, and Finance (module-boundaries.md),
+// all already registered above: resolves UMS.Shared.Student.IStudentStatusChecker AND
+// UMS.Shared.Faculty.IFacultyMemberLookup (a Library borrower may be either), UMS.Shared.Finance.
+// IInvoiceRequester (LIB-13 LibraryFine invoicing), and UMS.Shared.Notifications.
+// INotificationRequestIntake, all real by this point.
+builder.Services.AddLibraryModule(builder.Configuration);
+
 // Shared JWT authentication + permission-based authorization (ums-conventions.md: one shared
 // implementation, not per-module reinvention) - every module's protected endpoints gate through
 // this, never their own hand-rolled [Authorize] policy.
@@ -236,6 +245,7 @@ await app.Services.UseLearningModuleAsync();
 await app.Services.UseFinanceModuleAsync();
 await app.Services.UseAdmissionModuleAsync();
 await app.Services.UseHostelModuleAsync();
+await app.Services.UseLibraryModuleAsync();
 
 app.UseUmsObservability();
 app.UseUmsErrorHandling();
@@ -271,6 +281,7 @@ app.MapLearningModule();
 app.MapFinanceModule();
 app.MapAdmissionModule();
 app.MapHostelModule();
+app.MapLibraryModule();
 
 app.Run();
 
