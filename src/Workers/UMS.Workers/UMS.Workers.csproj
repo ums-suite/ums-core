@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\UMS.Modules\Admission\UMS.Modules.Admission.Infrastructure\UMS.Modules.Admission.Infrastructure.csproj" />
     <ProjectReference Include="..\..\UMS.Modules\Hostel\UMS.Modules.Hostel.Infrastructure\UMS.Modules.Hostel.Infrastructure.csproj" />
     <ProjectReference Include="..\..\UMS.Modules\Library\UMS.Modules.Library.Infrastructure\UMS.Modules.Library.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\UMS.Modules\Content\UMS.Modules.Content.Infrastructure\UMS.Modules.Content.Infrastructure.csproj" />
     <ProjectReference Include="..\..\UMS.Modules\Reporting\UMS.Modules.Reporting.Infrastructure\UMS.Modules.Reporting.Infrastructure.csproj" />
   </ItemGroup>
 

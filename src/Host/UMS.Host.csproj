@@ -88,6 +88,11 @@
     <ProjectReference Include="..\UMS.Modules\Library\UMS.Modules.Library.Api\UMS.Modules.Library.Api.csproj" />
     <ProjectReference Include="..\UMS.Modules\Library\UMS.Modules.Library.Infrastructure\UMS.Modules.Library.Infrastructure.csproj" />
 
+    <!-- Content (Flow #24) - depends on Identity, Organization, Notifications, and Documents
+         (module-boundaries.md), all already registered above. -->
+    <ProjectReference Include="..\UMS.Modules\Content\UMS.Modules.Content.Api\UMS.Modules.Content.Api.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Content\UMS.Modules.Content.Infrastructure\UMS.Modules.Content.Infrastructure.csproj" />
+
     <!-- Reporting (release/DEVELOPMENT_PLAN.md Flow #22) - ADR-0013 permits it to depend on every
          other module's own READ-ONLY cross-module reporting-query contract (Academic, Admission,
          Finance, Faculty, Hostel, Library); registered last since it depends on all of the above,
