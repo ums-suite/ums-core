@@ -27,6 +27,7 @@
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Outbox\UMS.Shared.Outbox.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Notifications\UMS.Shared.Notifications.csproj" />
     <ProjectReference Include="..\..\..\Shared\UMS.Shared.Integrations\UMS.Shared.Integrations.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Admission\UMS.Shared.Admission.csproj" />
   </ItemGroup>
 
 </Project>

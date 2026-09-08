@@ -79,6 +79,10 @@ public static class DependencyInjection
         services.AddScoped<INotificationRequestPublisher, NotificationRequestIntakeAdapter>();
         services.AddScoped<IResultCache, RedisResultCache>();
 
+        // RPT-3 (release/DEVELOPMENT_PLAN.md Flow #22, Reporting): Admission's own outward-facing
+        // reporting-query contract - see CrossModule.AdmissionReportingQueryAdapter's own remarks.
+        services.AddScoped<UMS.Shared.Admission.IAdmissionReportingQuery, CrossModule.AdmissionReportingQueryAdapter>();
+
         services.AddScoped<CampaignService>();
         services.AddScoped<ApplicantService>();
         services.AddScoped<AdmitCardService>();
