@@ -75,5 +75,49 @@ internal sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
                 .HasFilter("gateway_transaction_id IS NOT NULL");
         });
         builder.Navigation(p => p.Transactions).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.OwnsMany(p => p.Refunds, ConfigureRefund);
+        builder.Navigation(p => p.Refunds).UsePropertyAccessMode(PropertyAccessMode.Field);
+    }
+
+    // FIN-11: a separate, explicitly-typed method - not an inline lambda - mirroring
+    // InvoiceConfiguration.ConfigureItem's own remarks (an inline lambda whose own body also calls a
+    // second overloaded generic builder method defeats OwnsMany's TRelatedEntity inference here).
+    //
+    // Refund.Id (a real business Guid, Refund's own external identity) is deliberately NOT this
+    // owned collection's EF key - see Refund's own remarks: EF Core 10.0.11 misidentifies a brand-new
+    // child row as an UPDATE when its key is a fully caller-supplied value and the parent Payment is
+    // already tracked/persisted (exactly Refund's own shape - added to an EXISTING Payment, unlike
+    // PaymentTransaction which is always added to a still-Added, not-yet-persisted Payment). The key
+    // here is instead a shadow Ordinal position column, the identical fix InvoiceItem's own mapping
+    // above already applies for the same underlying limitation.
+    private static void ConfigureRefund(OwnedNavigationBuilder<Payment, Refund> refund)
+    {
+        refund.ToTable("refunds");
+        refund.WithOwner().HasForeignKey("PaymentId");
+        refund.Property<PaymentId>("PaymentId").HasConversion(id => id.Value, value => new PaymentId(value)).HasColumnName("payment_id");
+        refund.Property<int>("Ordinal").HasColumnName("ordinal");
+        refund.HasKey("PaymentId", "Ordinal");
+
+        refund.Property(r => r.Id).HasConversion(id => id.Value, value => new RefundId(value)).HasColumnName("id").IsRequired();
+        refund.Property(r => r.PaymentTransactionId).HasConversion(id => id.Value, value => new PaymentTransactionId(value)).HasColumnName("payment_transaction_id").IsRequired();
+        refund.Property(r => r.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(32).IsRequired();
+        refund.Property(r => r.Method).HasColumnName("method").HasConversion<string>().HasMaxLength(32).IsRequired();
+        refund.Property(r => r.RequestedByUserId).HasColumnName("requested_by_user_id").IsRequired();
+        refund.Property(r => r.GatewayRefundReference).HasColumnName("gateway_refund_reference").HasMaxLength(200);
+        refund.Property(r => r.FailureReason).HasColumnName("failure_reason").HasMaxLength(2000);
+        refund.Property(r => r.CreatedAt).HasColumnName("created_at").IsRequired();
+        refund.Property(r => r.UpdatedAt).HasColumnName("updated_at").IsRequired();
+
+        // Plain scalars, not a nested Money mapping - the identical ComplexProperty-one-level-inside-
+        // an-owned-collection limitation InvoiceItem's own mapping documents (a struct Money also
+        // rules out OwnsOne/OwnsMany here, same reasoning).
+        refund.Property(r => r.Amount).HasColumnName("amount").HasPrecision(12, 2).IsRequired();
+        refund.Property(r => r.Currency).HasColumnName("currency").HasMaxLength(3).IsRequired();
+        refund.Ignore(r => r.AsMoney);
+
+        // Refund.Id is a real business identity (external references - audit, notifications, the API
+        // response) even though it is not the EF key - unique so it is still safely addressable.
+        refund.HasIndex(r => r.Id).IsUnique().HasDatabaseName("ux_refunds_id");
     }
 }

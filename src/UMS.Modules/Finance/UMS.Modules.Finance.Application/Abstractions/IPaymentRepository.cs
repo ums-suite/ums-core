@@ -17,5 +17,13 @@ public interface IPaymentRepository
     /// <summary>FIN-9/FIN-10: every Payment still non-terminal whose transaction was last updated before <paramref name="updatedBefore"/> - the polling/stale-timeout sweep's own candidate set.</summary>
     public Task<IReadOnlyList<Payment>> GetNonTerminalUpdatedBeforeAsync(DateTimeOffset updatedBefore, int batchSize, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// FIN-14: design-decisions.md "Reconciliation Job Concurrency-Safety" - the daily reconciliation
+    /// job's own unlocked candidate scan, mirroring <see cref="GetNonTerminalUpdatedBeforeAsync"/>
+    /// exactly: every Successful (not yet Reconciled) Payment last updated before the buffer-window
+    /// cutoff, deferring anything more recent to the next run.
+    /// </summary>
+    public Task<IReadOnlyList<Payment>> GetSuccessfulUnreconciledUpdatedBeforeAsync(DateTimeOffset updatedBefore, int batchSize, CancellationToken cancellationToken = default);
+
     public void Add(Payment payment);
 }

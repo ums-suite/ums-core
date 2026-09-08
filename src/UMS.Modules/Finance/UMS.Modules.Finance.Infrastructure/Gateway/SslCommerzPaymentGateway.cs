@@ -68,6 +68,49 @@ internal sealed class SslCommerzPaymentGateway(HttpClient httpClient, IOptionsMo
             : null;
     }
 
+    public async Task<GatewayRefundResult?> RefundAsync(GatewayRefundRequest request, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        using var response = await httpClient.PostAsJsonAsync(
+            "/refund",
+            new { request.MerchantTransactionId, request.GatewayTransactionId, request.Amount, request.Currency },
+            cancellationToken).ConfigureAwait(false);
+
+        if (response.StatusCode == HttpStatusCode.Conflict)
+        {
+            // requirement-spec.md §9's refund-execution decision: this gateway/method does not
+            // support a programmatic refund for this transaction - RefundService falls back to
+            // manual settlement, this is never itself a failure.
+            return null;
+        }
+
+        if (response.StatusCode != HttpStatusCode.OK)
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            throw new HttpRequestException($"{Name} gateway rejected the refund request with {(int)response.StatusCode}: {body}");
+        }
+
+        var payload = await response.Content.ReadFromJsonAsync<RefundResponse>(cancellationToken).ConfigureAwait(false)
+            ?? throw new HttpRequestException($"{Name} gateway returned an empty refund response.");
+
+        return new GatewayRefundResult(payload.RefundReference, payload.Succeeded, payload.FailureReason);
+    }
+
+    public async Task<IReadOnlyList<GatewaySettlementRecord>> GetSettlementReportAsync(DateOnly settlementDate, CancellationToken cancellationToken = default)
+    {
+        using var response = await httpClient.GetAsync($"/settlement/{settlementDate:yyyy-MM-dd}", cancellationToken).ConfigureAwait(false);
+        response.EnsureSuccessStatusCode();
+
+        var payload = await response.Content.ReadFromJsonAsync<List<SettlementRecordResponse>>(cancellationToken).ConfigureAwait(false)
+            ?? [];
+
+        return payload
+            .Where(r => Enum.TryParse<PaymentStatus>(r.Status, ignoreCase: true, out _))
+            .Select(r => new GatewaySettlementRecord(r.MerchantTransactionId, r.GatewayTransactionId, Enum.Parse<PaymentStatus>(r.Status, ignoreCase: true)))
+            .ToList();
+    }
+
     public bool VerifyWebhookSignature(string rawPayload, string? providedSignature)
     {
         if (string.IsNullOrEmpty(providedSignature))
@@ -87,4 +130,8 @@ internal sealed class SslCommerzPaymentGateway(HttpClient httpClient, IOptionsMo
     private sealed record InitiationResponse(string SessionKey, string RedirectUrl);
 
     private sealed record StatusResponse(string GatewayTransactionId, string Status);
+
+    private sealed record RefundResponse(string RefundReference, bool Succeeded, string? FailureReason);
+
+    private sealed record SettlementRecordResponse(string MerchantTransactionId, string GatewayTransactionId, string Status);
 }

@@ -48,7 +48,17 @@ internal static class PaymentEndpoints
             // legitimate gateway never sees a status it would reasonably retry-forever on.
             return result.IsSuccess ? Results.Ok() : result.Error!.ToProblemResult(httpContext);
         }).AllowAnonymous();
+
+        // FIN-11: requirement-spec.md §6 - "Accountant/Admin only", not ownership-scoped (a Payment's
+        // own owner never refunds their own money - this is an operator action).
+        payments.MapPost("/{id:guid}/refund", async (Guid id, RefundPaymentHttpRequest body, HttpContext httpContext, RefundService service, CancellationToken cancellationToken) =>
+        {
+            var result = await service.RefundAsync(id, httpContext.GetAuditContext(), new RefundPaymentRequest(body.Amount, body.Reason), cancellationToken).ConfigureAwait(false);
+            return result.Match<IResult>(Results.Ok, error => error.ToProblemResult(httpContext));
+        }).RequirePermission(FinancePermissions.PaymentRefund);
     }
 
     private sealed record InitiatePaymentHttpRequest(Guid InvoiceId);
+
+    private sealed record RefundPaymentHttpRequest(decimal Amount, string? Reason);
 }
