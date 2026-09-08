@@ -66,6 +66,25 @@ public sealed class BorrowerContextService(IStudentStatusChecker studentStatusCh
         // contract is extended.
         return borrowerId;
     }
+
+    /// <summary>
+    /// Used by the Notifications relay worker for outbox events that carry only a bare
+    /// <c>BorrowerId</c> Guid, no <see cref="BorrowerType"/> discriminator (e.g. <c>LoanReturned</c>,
+    /// <c>FineAccrued</c>) - tries Student first, then falls back to the same
+    /// best-available-identifier posture <see cref="ResolveIdentityUserIdAsync"/> documents for
+    /// Faculty. Returns <see langword="null"/> if neither lookup resolves the id at all.
+    /// </summary>
+    public async Task<Guid?> ResolveRecipientUserIdAsync(Guid borrowerId, CancellationToken cancellationToken = default)
+    {
+        var standing = await studentStatusChecker.GetByStudentIdAsync(borrowerId, cancellationToken).ConfigureAwait(false);
+        if (standing is not null)
+        {
+            return standing.IdentityUserId;
+        }
+
+        var facultyMember = await facultyMemberLookup.GetAsync(borrowerId, cancellationToken).ConfigureAwait(false);
+        return facultyMember is not null ? borrowerId : null;
+    }
 }
 
 /// <param name="Status">The borrower's CURRENT standing, resolved fresh at lookup time - never cached/trusted from an earlier read (design-decisions.md).</param>

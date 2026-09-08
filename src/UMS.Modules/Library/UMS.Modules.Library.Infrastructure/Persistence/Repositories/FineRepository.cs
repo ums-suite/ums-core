@@ -11,11 +11,24 @@ internal sealed class FineRepository(LibraryDbContext context) : IFineRepository
     public Task<Fine?> GetByIdAsync(FineId id, CancellationToken cancellationToken = default) =>
         context.Fines.FirstOrDefaultAsync(f => f.Id == id, cancellationToken);
 
-    /// <summary>design-decisions.md "Fine-Accrual Job Idempotency" / "Fine-Settlement Consistency": no `.Include` needed on Fine, so the single-step `FromSqlInterpolated ... FOR UPDATE` form suffices.</summary>
-    public Task<Fine?> GetByIdForUpdateAsync(FineId id, CancellationToken cancellationToken = default) =>
-        context.Fines
-            .FromSqlInterpolated($"SELECT *, xmin FROM library.fines WHERE id = {id.Value} FOR UPDATE")
-            .SingleOrDefaultAsync(cancellationToken);
+    /// <summary>
+    /// design-decisions.md "Fine-Accrual Job Idempotency" / "Fine-Settlement Consistency": Fine has
+    /// no `.Include` needing the two-step lock-then-query pattern - but composing
+    /// `FromSqlInterpolated("SELECT *, xmin ...")` directly against Fine breaks anyway, for a
+    /// DIFFERENT reason discovered via this repository's own integration tests: <see cref="Fine.Amount"/>'s
+    /// <c>ComplexProperty</c> mapping needs EF to reshape the raw "*" projection into its own
+    /// <c>amount</c>/<c>currency</c> column names, and that reshaping fails ("column
+    /// u.Amount_Amount does not exist" - EF falls back to the ComplexProperty's DEFAULT naming
+    /// convention instead of the configured `HasColumnName` calls). The two-step form (raw lock,
+    /// discard, then an ordinary tracked LINQ query - the same shape <see cref="GetOpenOverdueFineForUpdateAsync"/>
+    /// already uses) sidesteps the bug entirely, since the second query is plain LINQ, not a
+    /// FromSql composition.
+    /// </summary>
+    public async Task<Fine?> GetByIdForUpdateAsync(FineId id, CancellationToken cancellationToken = default)
+    {
+        await context.Database.ExecuteSqlInterpolatedAsync($"SELECT 1 FROM library.fines WHERE id = {id.Value} FOR UPDATE", cancellationToken).ConfigureAwait(false);
+        return await context.Fines.FirstOrDefaultAsync(f => f.Id == id, cancellationToken).ConfigureAwait(false);
+    }
 
     public Task<Fine?> GetByInvoiceIdAsync(Guid invoiceId, CancellationToken cancellationToken = default) =>
         context.Fines.FirstOrDefaultAsync(f => f.InvoiceId == invoiceId, cancellationToken);

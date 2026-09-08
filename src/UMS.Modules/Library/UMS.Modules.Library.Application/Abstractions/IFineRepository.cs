@@ -6,7 +6,7 @@ public interface IFineRepository
 {
     public Task<Fine?> GetByIdAsync(FineId id, CancellationToken cancellationToken = default);
 
-    /// <summary>design-decisions.md "Fine-Accrual Job Idempotency" / "Fine-Settlement Consistency": the pessimistic lock every Fine writer (accrual, settlement, waiver) takes. Fine has no owned collection needing `.Include`, so the single-step `FromSqlInterpolated ... FOR UPDATE` form suffices.</summary>
+    /// <summary>design-decisions.md "Fine-Accrual Job Idempotency" / "Fine-Settlement Consistency": the pessimistic lock every Fine writer (accrual, settlement, waiver) takes. Uses the two-step lock-then-query pattern (see the Infrastructure implementation's own remarks) - composing `FromSqlInterpolated` directly against Fine breaks its `ComplexProperty`-mapped Amount field's column shaping.</summary>
     public Task<Fine?> GetByIdForUpdateAsync(FineId id, CancellationToken cancellationToken = default);
 
     public Task<Fine?> GetByInvoiceIdAsync(Guid invoiceId, CancellationToken cancellationToken = default);
