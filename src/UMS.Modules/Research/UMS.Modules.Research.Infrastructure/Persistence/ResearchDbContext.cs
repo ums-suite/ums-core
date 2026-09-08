@@ -43,9 +43,28 @@ public sealed class ResearchDbContext(DbContextOptions<ResearchDbContext> option
         return new EfUmsTransaction(transaction);
     }
 
+    /// <summary>
+    /// Genuine bug found and fixed here (not present when this same pattern is used elsewhere in
+    /// this codebase, since every other module's own <c>SetExpectedVersion</c> caller always ALSO
+    /// changes a genuine scalar property on the same call - e.g. <c>Notice.Status</c>): setting only
+    /// the concurrency token's <c>OriginalValue</c> does nothing on its own unless EF Core's own
+    /// change tracker considers the entry itself "Modified" - Grant's own investigator add/remove
+    /// (RES-3) mutates ONLY the owned <c>grant_investigators</c> child collection, leaving every
+    /// scalar property on the <c>Grant</c> row itself untouched, so EF never emits an UPDATE for the
+    /// <c>grants</c> row at all and the xmin-based check silently never fires - two concurrent
+    /// <c>AddInvestigator</c> calls against the same stale version BOTH silently succeed. Forcing the
+    /// whole entry to <see cref="EntityState.Modified"/> guarantees a genuine UPDATE (touching every
+    /// column back to its own already-current value where nothing logically changed) whose WHERE
+    /// clause still carries the real xmin equality check - a standard, safe "touch to force a
+    /// concurrency check" pattern, harmless for the ordinary scalar-mutation case too.
+    /// </summary>
     public void SetExpectedVersion<TEntity>(TEntity entity, uint expectedVersion)
-        where TEntity : class =>
-        Entry(entity).Property("Version").OriginalValue = expectedVersion;
+        where TEntity : class
+    {
+        var entry = Entry(entity);
+        entry.Property("Version").OriginalValue = expectedVersion;
+        entry.State = EntityState.Modified;
+    }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

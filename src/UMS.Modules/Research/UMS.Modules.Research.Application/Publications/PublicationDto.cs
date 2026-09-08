@@ -26,3 +26,9 @@ public sealed record CreatePublicationRequest(string Title, IReadOnlyList<Author
 public sealed record UpdatePublicationRequest(string Title, IReadOnlyList<AuthorEntryDto> Authors, VenueDto Venue, CitationMetadataDto Citation, uint Version);
 
 public sealed record MergePublicationsRequest(Guid MergedPublicationId);
+
+public sealed record PublicationDuplicateCandidateDto(Guid Id, Guid PublicationId, Guid CandidatePublicationId, string MatchReason, string Status, DateTimeOffset CreatedAt);
+
+public sealed record SetPubliclyVisibleRequest(bool IsPubliclyVisible);
+
+public sealed record LinkFundedByGrantRequest(Guid GrantId);

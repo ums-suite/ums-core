@@ -42,3 +42,5 @@ public sealed record FundGrantRequest(
 public sealed record GrantVersionedActionRequest(uint Version);
 
 public sealed record AddGrantInvestigatorRequest(Guid FacultyMemberId, string Role, uint Version);
+
+public sealed record SetPubliclyVisibleRequest(bool IsPubliclyVisible);

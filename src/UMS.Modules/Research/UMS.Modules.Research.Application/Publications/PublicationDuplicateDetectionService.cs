@@ -1,6 +1,7 @@
 using System.Text;
 using UMS.Modules.Research.Application.Abstractions;
 using UMS.Modules.Research.Domain.Publications;
+using UMS.Shared.ErrorHandling.Results;
 
 namespace UMS.Modules.Research.Application.Publications;
 
@@ -19,8 +20,32 @@ namespace UMS.Modules.Research.Application.Publications;
 /// sophisticated than it is.
 /// </para>
 /// </summary>
-public sealed class PublicationDuplicateDetectionService(IPublicationRepository publications, IPublicationDuplicateCandidateRepository candidates, IClock clock)
+public sealed class PublicationDuplicateDetectionService(IPublicationRepository publications, IPublicationDuplicateCandidateRepository candidates, IUnitOfWork unitOfWork, IClock clock)
 {
+    /// <summary>RES-9: the Admin review-queue read - "held for Admin review" (§3 module-local term) needs a way to list what is currently pending.</summary>
+    public async Task<IReadOnlyList<PublicationDuplicateCandidateDto>> ListPendingAsync(int skip, int take, CancellationToken cancellationToken = default)
+    {
+        skip = Math.Max(skip, 0);
+        take = Math.Clamp(take <= 0 ? 50 : take, 1, 200);
+
+        var items = await candidates.ListPendingAsync(skip, take, cancellationToken).ConfigureAwait(false);
+        return items.Select(ToDto).ToList();
+    }
+
+    /// <summary>Explicit Admin dismissal of a flagged pair as NOT actually duplicates - a deliberate human decision, never automatic, mirroring the "never auto-merge" posture (§9). A genuine duplicate is instead resolved by calling <c>PublicationService.MergeAsync</c> directly; this candidate row is then left <c>Pending</c> (a documented gap - see PR notes) unless an Admin separately dismisses it here.</summary>
+    public async Task<Result> DismissAsync(Guid candidateId, CancellationToken cancellationToken = default)
+    {
+        var candidate = await candidates.GetByIdAsync(new PublicationDuplicateCandidateId(candidateId), cancellationToken).ConfigureAwait(false);
+        if (candidate is null)
+        {
+            return Result.Failure(Error.NotFound("publicationduplicatecandidate.not_found", $"No PublicationDuplicateCandidate exists with id '{candidateId}'."));
+        }
+
+        candidate.Dismiss(clock.UtcNow);
+        await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        return Result.Success();
+    }
+
     public async Task<PublicationDuplicateCandidate?> DetectAsync(Publication newPublication, CancellationToken cancellationToken = default)
     {
         if (!string.IsNullOrWhiteSpace(newPublication.Citation.Doi))
@@ -55,6 +80,14 @@ public sealed class PublicationDuplicateDetectionService(IPublicationRepository 
         candidates.Add(candidate);
         return candidate;
     }
+
+    private static PublicationDuplicateCandidateDto ToDto(PublicationDuplicateCandidate candidate) => new(
+        candidate.Id.Value,
+        candidate.PublicationId,
+        candidate.CandidatePublicationId,
+        candidate.MatchReason,
+        candidate.Status.ToString(),
+        candidate.CreatedAt);
 
     /// <summary>Lower-cased, whitespace-collapsed, punctuation-stripped - deliberately simple, see class remarks.</summary>
     private static string Normalize(string value)

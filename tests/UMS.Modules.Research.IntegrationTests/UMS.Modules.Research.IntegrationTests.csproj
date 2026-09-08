@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.11" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.14.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\UMS.Modules\Research\UMS.Modules.Research.Domain\UMS.Modules.Research.Domain.csproj" />
+    <ProjectReference Include="..\..\src\UMS.Modules\Research\UMS.Modules.Research.Application\UMS.Modules.Research.Application.csproj" />
+    <ProjectReference Include="..\..\src\UMS.Modules\Research\UMS.Modules.Research.Infrastructure\UMS.Modules.Research.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Audit\UMS.Shared.Audit.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Faculty\UMS.Shared.Faculty.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Documents\UMS.Shared.Documents.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Notifications\UMS.Shared.Notifications.csproj" />
+  </ItemGroup>
+
+</Project>
