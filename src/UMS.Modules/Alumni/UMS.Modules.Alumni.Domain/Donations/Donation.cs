@@ -28,10 +28,11 @@ public sealed class Donation : AggregateRoot<DonationId>
     {
     }
 
-    private Donation(DonationId id, Guid alumnusId, Guid campaignId, decimal amount, string currency, bool isAnonymous, RecurrenceInterval recurrenceInterval, DonationId? seriesRootDonationId, DateTimeOffset now)
+    private Donation(DonationId id, Guid alumnusId, Guid ownerUserId, Guid campaignId, decimal amount, string currency, bool isAnonymous, RecurrenceInterval recurrenceInterval, DonationId? seriesRootDonationId, DateTimeOffset now)
     {
         Id = id;
         AlumnusId = alumnusId;
+        OwnerUserId = ownerUserId;
         CampaignId = campaignId;
         Amount = amount;
         Currency = currency;
@@ -44,6 +45,14 @@ public sealed class Donation : AggregateRoot<DonationId>
     }
 
     public Guid AlumnusId { get; private set; }
+
+    /// <summary>
+    /// The Identity <c>User</c> id to raise each cycle's Finance Invoice against (captured from the
+    /// donor's own JWT at the ROOT donation's creation time and copied forward onto every generated
+    /// cycle via <see cref="CreateNextCycle"/>) - ALM-10's scheduler runs with no HTTP/JWT context of
+    /// its own, so this must be persisted rather than re-resolved per cycle.
+    /// </summary>
+    public Guid OwnerUserId { get; private set; }
 
     public Guid CampaignId { get; private set; }
 
@@ -74,14 +83,23 @@ public sealed class Donation : AggregateRoot<DonationId>
 
     public DateTimeOffset? NextChargeAt { get; private set; }
 
-    public static Donation Initiate(Guid alumnusId, Guid campaignId, decimal amount, string currency, bool isAnonymous, RecurrenceInterval recurrenceInterval, DateTimeOffset now)
+    public static Donation Initiate(Guid alumnusId, Guid ownerUserId, Guid campaignId, decimal amount, string currency, bool isAnonymous, RecurrenceInterval recurrenceInterval, DateTimeOffset now)
     {
         if (amount <= 0)
         {
             throw new ArgumentException("A Donation's amount must be positive.", nameof(amount));
         }
 
-        return new Donation(DonationId.New(), alumnusId, campaignId, amount, currency, isAnonymous, recurrenceInterval, seriesRootDonationId: null, now);
+        var donation = new Donation(DonationId.New(), alumnusId, ownerUserId, campaignId, amount, currency, isAnonymous, recurrenceInterval, seriesRootDonationId: null, now);
+
+        // The first future charge is scheduled at creation time, not on confirmation - Confirm/Fail
+        // decouple "did THIS cycle succeed" from "when is the next cycle due" (see AdvanceScheduleAfterTriggering/PauseRecurrence's own remarks). A first-cycle failure still clears this via Fail().
+        if (donation.IsRecurring)
+        {
+            donation.NextChargeAt = donation.ComputeNextChargeAt(now);
+        }
+
+        return donation;
     }
 
     /// <summary>ALM-10: the scheduler's own next-cycle factory - copies the root's donor/campaign/amount/anonymity, always one-off in shape (its OWN recurrence is tracked back on the root, not re-declared per cycle).</summary>
@@ -92,7 +110,7 @@ public sealed class Donation : AggregateRoot<DonationId>
             throw new InvalidOperationException("Only a recurring series' root Donation may generate a next cycle.");
         }
 
-        return new Donation(DonationId.New(), root.AlumnusId, root.CampaignId, root.Amount, root.Currency, root.IsAnonymous, root.RecurrenceInterval, root.Id, now);
+        return new Donation(DonationId.New(), root.AlumnusId, root.OwnerUserId, root.CampaignId, root.Amount, root.Currency, root.IsAnonymous, root.RecurrenceInterval, root.Id, now);
     }
 
     public void RecordInvoice(Guid invoiceId) => InvoiceId = invoiceId;
@@ -108,11 +126,6 @@ public sealed class Donation : AggregateRoot<DonationId>
         Status = DonationStatus.Confirmed;
         ConfirmedAt = now;
         Raise(new DonationConfirmed(Id.Value, AlumnusId, now));
-
-        if (IsSeriesRoot && RecurrenceStatus == Domain.Donations.RecurrenceStatus.Active)
-        {
-            NextChargeAt = ComputeNextChargeAt(now);
-        }
     }
 
     /// <summary>design-decisions.md "Recurring-Donation Retry/Dunning Policy": pause on first failure - no retry of this cycle, ever.</summary>
@@ -127,9 +140,37 @@ public sealed class Donation : AggregateRoot<DonationId>
 
         if (IsSeriesRoot)
         {
-            RecurrenceStatus = Domain.Donations.RecurrenceStatus.Paused;
-            NextChargeAt = null;
+            PauseRecurrence();
         }
+    }
+
+    /// <summary>
+    /// Pauses the schedule following a failure ANYWHERE in the series - called on the ROOT entity
+    /// even when the failing cycle is a later, non-root Donation row (<see cref="Fail"/> only ever
+    /// mutates the row it is called on, so a non-root cycle's own failure cannot pause the schedule
+    /// by itself; the calling application service - <c>DonationConfirmationService</c> - loads the
+    /// root separately and calls this).
+    /// </summary>
+    public void PauseRecurrence()
+    {
+        if (!IsSeriesRoot)
+        {
+            throw new InvalidOperationException("Only a recurring series' root Donation's recurrence can be paused.");
+        }
+
+        RecurrenceStatus = Domain.Donations.RecurrenceStatus.Paused;
+        NextChargeAt = null;
+    }
+
+    /// <summary>ALM-10 scheduler-only: advances the root's own next-charge date immediately after successfully raising a new cycle's invoice - decouples "when to try next" from that cycle's own eventual Confirm/Fail outcome (a genuine failure separately pauses the schedule via <see cref="PauseRecurrence"/> once Finance's signal arrives).</summary>
+    public void AdvanceScheduleAfterTriggering(DateTimeOffset now)
+    {
+        if (!IsSeriesRoot || RecurrenceStatus != Domain.Donations.RecurrenceStatus.Active)
+        {
+            throw new InvalidOperationException("Only an Active recurring series' root Donation can have its schedule advanced.");
+        }
+
+        NextChargeAt = ComputeNextChargeAt(now);
     }
 
     /// <summary>ALM-10: <c>POST /donations/{id}/cancel-recurring</c> - donor-initiated, any time.</summary>
