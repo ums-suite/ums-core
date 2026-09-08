@@ -62,6 +62,8 @@ public sealed class DashboardEndToEndTests(ReportingServiceFixture fixture)
     [InlineData("hostel-dashboard")]
     [InlineData("library-dashboard")]
     [InlineData("admission-dashboard")]
+    [InlineData("content-dashboard")]
+    [InlineData("research-dashboard")]
     public async Task Every_remaining_dashboard_family_also_refreshes_to_Computed(string metricKey)
     {
         using (var scope = fixture.Services.CreateScope())
@@ -72,6 +74,13 @@ public sealed class DashboardEndToEndTests(ReportingServiceFixture fixture)
                 "hostel-dashboard" => scope.ServiceProvider.GetRequiredService<HostelDashboardRefreshService>(),
                 "library-dashboard" => scope.ServiceProvider.GetRequiredService<LibraryDashboardRefreshService>(),
                 "admission-dashboard" => scope.ServiceProvider.GetRequiredService<AdmissionDashboardRefreshService>(),
+                // Flow #26: "content-dashboard" is the seventh, Admin-facing dashboard family;
+                // "research-dashboard" has no GET route of its own (see
+                // ResearchDashboardRefreshService's own remarks) but is refreshed and read back
+                // through this exact same DashboardMetric mechanism - it feeds the regulatory-report
+                // pipeline instead of an Admin dashboard endpoint.
+                "content-dashboard" => scope.ServiceProvider.GetRequiredService<ContentDashboardRefreshService>(),
+                "research-dashboard" => scope.ServiceProvider.GetRequiredService<ResearchDashboardRefreshService>(),
                 _ => throw new InvalidOperationException(),
             };
 
@@ -83,6 +92,44 @@ public sealed class DashboardEndToEndTests(ReportingServiceFixture fixture)
         var response = await reader.GetAsync(metricKey);
 
         Assert.Equal(DashboardMetricComputationStatus.Computed, response.Status);
+    }
+
+    [Fact]
+    public async Task The_Content_dashboard_exposes_its_own_real_aggregate_payload()
+    {
+        using (var scope = fixture.Services.CreateScope())
+        {
+            var service = scope.ServiceProvider.GetRequiredService<ContentDashboardRefreshService>();
+            await service.RunAsync();
+        }
+
+        using var readScope = fixture.Services.CreateScope();
+        var reader = readScope.ServiceProvider.GetRequiredService<DashboardMetricReadService>();
+        var response = await reader.GetAsync(ContentDashboardRefreshService.MetricKeyValue);
+
+        Assert.Equal(DashboardMetricComputationStatus.Computed, response.Status);
+        var payload = response.Payload!.Value;
+        Assert.Equal(fixture.ContentQuery.Snapshot.PublishedNoticeCount, payload.GetProperty("PublishedNoticeCount").GetInt32());
+        Assert.Equal(fixture.ContentQuery.Snapshot.UpcomingEventCount, payload.GetProperty("UpcomingEventCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task The_Research_dashboard_metric_carries_the_real_Research_aggregates_feeding_the_Research_regulatory_category()
+    {
+        using (var scope = fixture.Services.CreateScope())
+        {
+            var service = scope.ServiceProvider.GetRequiredService<ResearchDashboardRefreshService>();
+            await service.RunAsync();
+        }
+
+        using var readScope = fixture.Services.CreateScope();
+        var reader = readScope.ServiceProvider.GetRequiredService<DashboardMetricReadService>();
+        var response = await reader.GetAsync(ResearchDashboardRefreshService.MetricKeyValue);
+
+        Assert.Equal(DashboardMetricComputationStatus.Computed, response.Status);
+        var payload = response.Payload!.Value;
+        Assert.Equal(fixture.ResearchQuery.Snapshot.TotalActiveGrants, payload.GetProperty("TotalActiveGrants").GetInt32());
+        Assert.Equal(fixture.ResearchQuery.Snapshot.TotalPublications, payload.GetProperty("TotalPublications").GetInt32());
     }
 
     [Fact]
