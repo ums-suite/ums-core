@@ -8,6 +8,7 @@ using UMS.Modules.Finance.Infrastructure;
 using UMS.Modules.Hostel.Infrastructure;
 using UMS.Modules.Identity.Infrastructure;
 using UMS.Modules.Learning.Infrastructure;
+using UMS.Modules.Library.Infrastructure;
 using UMS.Modules.Notifications.Infrastructure;
 using UMS.Modules.Organization.Infrastructure;
 using UMS.Modules.Student.Infrastructure;
@@ -21,6 +22,7 @@ using UMS.Workers.Faculty;
 using UMS.Workers.Finance;
 using UMS.Workers.Hostel;
 using UMS.Workers.Learning;
+using UMS.Workers.Library;
 using UMS.Workers.Notifications;
 using UMS.Workers.Student;
 
@@ -148,6 +150,24 @@ builder.Services.AddHostedService<HostelGracePeriodSweepWorker>();
 builder.Services.AddHostedService<HostelWaitlistReRankingRelayWorker>();
 builder.Services.AddHostedService<HostelNotificationRelayWorker>();
 
+// Library (Flow #20) - eight background pieces: LIB-13's Finance-payment relay (mirrors Hostel's/
+// Admission's own, reading finance.outbox_messages directly), LIB-16's Student- and Faculty-status
+// relays (Library is the platform's first consumer of BOTH outboxes for the same purpose, since a
+// Loan's borrower can be either), LIB-9's reservation-fulfillment relay (polls Library's OWN outbox
+// for LoanReturned, event-driven exactly like HostelWaitlistReRankingRelayWorker) and its
+// claim-window expiry sweep, LIB-10's overdue-detection sweep, LIB-11's fine-accrual sweep, and the
+// Notifications fan-out relay. Depends on Identity, Student, Faculty, and Finance
+// (module-boundaries.md), all already registered above.
+builder.Services.AddLibraryModule(builder.Configuration);
+builder.Services.AddHostedService<LibraryFinancePaymentRelayWorker>();
+builder.Services.AddHostedService<LibraryStudentStatusRelayWorker>();
+builder.Services.AddHostedService<LibraryFacultyStatusRelayWorker>();
+builder.Services.AddHostedService<LibraryReservationFulfillmentRelayWorker>();
+builder.Services.AddHostedService<LibraryReservationExpirySweepWorker>();
+builder.Services.AddHostedService<LibraryOverdueDetectionSweepWorker>();
+builder.Services.AddHostedService<LibraryFineAccrualSweepWorker>();
+builder.Services.AddHostedService<LibraryNotificationRelayWorker>();
+
 // Same readiness contract as UMS.Host (ums-conventions.md, Observability: "UMS.Workers exposes
 // the same two endpoints"). Per-job outbox/queue-depth checks (ADR-0014) are added once the first
 // real worker (module-owned outbox relay) exists.
@@ -180,6 +200,7 @@ await app.Services.UseLearningModuleAsync();
 await app.Services.UseFinanceModuleAsync();
 await app.Services.UseAdmissionModuleAsync();
 await app.Services.UseHostelModuleAsync();
+await app.Services.UseLibraryModuleAsync();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });

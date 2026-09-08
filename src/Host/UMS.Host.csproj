@@ -82,6 +82,11 @@
          decision 1: Hostel owns its own Building/Room). -->
     <ProjectReference Include="..\UMS.Modules\Hostel\UMS.Modules.Hostel.Api\UMS.Modules.Hostel.Api.csproj" />
     <ProjectReference Include="..\UMS.Modules\Hostel\UMS.Modules.Hostel.Infrastructure\UMS.Modules.Hostel.Infrastructure.csproj" />
+
+    <!-- Library (Flow #20) - depends on Identity, Student, Faculty, and Finance
+         (module-boundaries.md), all already registered above. -->
+    <ProjectReference Include="..\UMS.Modules\Library\UMS.Modules.Library.Api\UMS.Modules.Library.Api.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Library\UMS.Modules.Library.Infrastructure\UMS.Modules.Library.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
