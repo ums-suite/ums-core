@@ -76,6 +76,12 @@
          plus Student (ADM-21's IStudentRecordProvisioner handoff), registered above by Flow #11. -->
     <ProjectReference Include="..\UMS.Modules\Admission\UMS.Modules.Admission.Api\UMS.Modules.Admission.Api.csproj" />
     <ProjectReference Include="..\UMS.Modules\Admission\UMS.Modules.Admission.Infrastructure\UMS.Modules.Admission.Infrastructure.csproj" />
+
+    <!-- Hostel (Flow #19) - depends on Identity, Student, and Finance (module-boundaries.md),
+         all already registered above. Deliberately NOT Organization (requirement-spec.md §9
+         decision 1: Hostel owns its own Building/Room). -->
+    <ProjectReference Include="..\UMS.Modules\Hostel\UMS.Modules.Hostel.Api\UMS.Modules.Hostel.Api.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Hostel\UMS.Modules.Hostel.Infrastructure\UMS.Modules.Hostel.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

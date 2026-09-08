@@ -14,6 +14,8 @@ using UMS.Modules.Faculty.Api;
 using UMS.Modules.Faculty.Infrastructure;
 using UMS.Modules.Finance.Api;
 using UMS.Modules.Finance.Infrastructure;
+using UMS.Modules.Hostel.Api;
+using UMS.Modules.Hostel.Infrastructure;
 using UMS.Modules.Identity.Api;
 using UMS.Modules.Identity.Infrastructure;
 using UMS.Modules.Learning.Api;
@@ -134,6 +136,14 @@ builder.Services.AddFinanceModule(builder.Configuration);
 // the provider-selection default per that ADR's own text.
 builder.Services.AddAdmissionModule(builder.Configuration);
 
+// Hostel (Flow #19) - depends on Identity, Student, and Finance (module-boundaries.md), all
+// already registered above: resolves UMS.Shared.Student.IStudentStatusChecker (eligibility/
+// ownership resolution), UMS.Shared.Finance.IInvoiceRequester (HOS-8 hostel-fee invoicing), and
+// UMS.Shared.Notifications.INotificationRequestIntake, all real by this point. Deliberately NOT
+// Organization (requirement-spec.md §9 decision 1: Hostel owns its own Building/Room, distinct
+// from Organization's academic ones).
+builder.Services.AddHostelModule(builder.Configuration);
+
 // Shared JWT authentication + permission-based authorization (ums-conventions.md: one shared
 // implementation, not per-module reinvention) - every module's protected endpoints gate through
 // this, never their own hand-rolled [Authorize] policy.
@@ -225,6 +235,7 @@ await app.Services.UseAcademicModuleAsync();
 await app.Services.UseLearningModuleAsync();
 await app.Services.UseFinanceModuleAsync();
 await app.Services.UseAdmissionModuleAsync();
+await app.Services.UseHostelModuleAsync();
 
 app.UseUmsObservability();
 app.UseUmsErrorHandling();
@@ -259,6 +270,7 @@ app.MapAcademicModule();
 app.MapLearningModule();
 app.MapFinanceModule();
 app.MapAdmissionModule();
+app.MapHostelModule();
 
 app.Run();
 
