@@ -15,17 +15,22 @@ using UMS.Shared.Authorization;
 namespace UMS.Modules.Reporting.Infrastructure;
 
 /// <summary>
-/// Composition root for the Reporting module (release/DEVELOPMENT_PLAN.md Flow #22).
+/// Composition root for the Reporting module (release/DEVELOPMENT_PLAN.md Flow #22, topped up by
+/// Flow #26 "Reporting - Content &amp; Research top-up").
 ///
 /// <para>
-/// Reporting is the one module permitted a "depends on everything" shape (ADR-0013) - but every
-/// one of its ten (of the eleven named in requirement-spec.md §7; Alumni/Content are future
-/// Flows #24/#29, out of scope here) source-module dependencies is a READ-ONLY cross-module query
-/// contract (<c>UMS.Shared.Academic.IAcademicReportingQuery</c> et al.), each already registered by
-/// the time this module builds (the Host/Workers composition root registers every source module
-/// before Reporting - see each one's own <c>AddXModule</c> remarks). This composition root
-/// therefore resolves them directly, with NO stub anywhere - every dependency is real by
-/// construction, mirroring Library's/Hostel's own "everything it depends on already exists" posture.
+/// Reporting is the one module permitted a "depends on everything" shape (ADR-0013) - but every one
+/// of its now eleven (of the eleven named in requirement-spec.md §7; Alumni remains a future flow,
+/// out of scope here) source-module dependencies is a READ-ONLY cross-module query contract
+/// (<c>UMS.Shared.Academic.IAcademicReportingQuery</c> et al.), each already registered by the time
+/// this module builds (the Host/Workers composition root registers every source module before
+/// Reporting - see each one's own <c>AddXModule</c> remarks). This composition root therefore
+/// resolves them directly, with NO stub anywhere - every dependency is real by construction,
+/// mirroring Library's/Hostel's own "everything it depends on already exists" posture. Flow #26
+/// added <c>UMS.Shared.Research.IResearchReportingQuery</c> (replacing the base flow's
+/// Faculty-headcount proxy for the "Research" regulatory category) and
+/// <c>UMS.Shared.Content.IContentReportingQuery</c> (a new, seventh admin dashboard - a documented
+/// scope extension, see that contract's own remarks).
 /// </para>
 /// </summary>
 public static class DependencyInjection
@@ -61,6 +66,8 @@ public static class DependencyInjection
         services.AddScoped<FacultyDashboardRefreshService>();
         services.AddScoped<HostelDashboardRefreshService>();
         services.AddScoped<LibraryDashboardRefreshService>();
+        services.AddScoped<ResearchDashboardRefreshService>();
+        services.AddScoped<ContentDashboardRefreshService>();
 
         services.AddScoped<RegulatoryReportDefinitionService>();
         services.AddScoped<RegulatoryReportRunService>();

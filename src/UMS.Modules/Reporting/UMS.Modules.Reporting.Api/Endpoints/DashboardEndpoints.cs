@@ -25,6 +25,12 @@ internal static class DashboardEndpoints
         MapDashboard(dashboards, "faculty", FacultyDashboardRefreshService.MetricKeyValue, ReportingPermissions.DashboardReadFaculty);
         MapDashboard(dashboards, "hostel", HostelDashboardRefreshService.MetricKeyValue, ReportingPermissions.DashboardReadHostel);
         MapDashboard(dashboards, "library", LibraryDashboardRefreshService.MetricKeyValue, ReportingPermissions.DashboardReadLibrary);
+
+        // Flow #26: the seventh, Content-owned dashboard - a deliberate scope extension, not one of
+        // requirement-spec.md §2.2's original six (see UMS.Shared.Content.IContentReportingQuery's
+        // own remarks). No "research" route exists alongside it - the "research-dashboard" metric
+        // has no Admin-facing GET route of its own (ResearchDashboardRefreshService's own remarks).
+        MapDashboard(dashboards, "content", ContentDashboardRefreshService.MetricKeyValue, ReportingPermissions.DashboardReadContent);
     }
 
     private static void MapDashboard(RouteGroupBuilder group, string route, string metricKey, string permission)
