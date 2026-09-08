@@ -197,12 +197,16 @@ builder.Services.AddHostedService<ResearchEmbargoLiftSweepWorker>();
 builder.Services.AddHostedService<ResearchFacultyStatusRelayWorker>();
 builder.Services.AddHostedService<ResearchNotificationRelayWorker>();
 
-// Reporting (release/DEVELOPMENT_PLAN.md Flow #22) - ADR-0013's "depends on everything" module:
-// six independent per-dashboard-family refresh workers (RPT-1/RPT-4..9, design-decisions.md - no
-// single mega-scheduler), each acquiring RPT-1's Redis lease before running, plus the
-// RegulatoryReportRun poll relay (RPT-12/RPT-13). Depends on Academic, Admission, Finance, Faculty,
-// Hostel, and Library's own read-only reporting-query contracts, Documents (RPT-13 PDF generation),
-// and Notifications, all already registered above.
+// Reporting (release/DEVELOPMENT_PLAN.md Flow #22, topped up by Flow #26 "Reporting - Content &
+// Research top-up") - ADR-0013's "depends on everything" module: eight independent
+// per-dashboard-family refresh workers (RPT-1/RPT-4..9 plus Flow #26's Research/Content additions,
+// design-decisions.md - no single mega-scheduler), each acquiring RPT-1's Redis lease before
+// running, plus the RegulatoryReportRun poll relay (RPT-12/RPT-13). Depends on Academic, Admission,
+// Finance, Faculty, Hostel, Library, Research, and Content's own read-only reporting-query
+// contracts, Documents (RPT-13 PDF generation), and Notifications, all already registered above.
+// ResearchMetricRefreshWorker has no Admin-facing dashboard route of its own (see
+// ResearchDashboardRefreshService's own remarks) - it exists solely to keep the "research-dashboard"
+// DashboardMetric fresh for the regulatory-report pipeline's "Research" category.
 builder.Services.AddReportingModule(builder.Configuration);
 builder.Services.AddHostedService<AcademicMetricRefreshWorker>();
 builder.Services.AddHostedService<AdmissionMetricRefreshWorker>();
@@ -210,6 +214,8 @@ builder.Services.AddHostedService<FinancialMetricRefreshWorker>();
 builder.Services.AddHostedService<FacultyMetricRefreshWorker>();
 builder.Services.AddHostedService<HostelMetricRefreshWorker>();
 builder.Services.AddHostedService<LibraryMetricRefreshWorker>();
+builder.Services.AddHostedService<ResearchMetricRefreshWorker>();
+builder.Services.AddHostedService<ContentMetricRefreshWorker>();
 builder.Services.AddHostedService<RegulatoryReportRunRelayWorker>();
 
 // Same readiness contract as UMS.Host (ums-conventions.md, Observability: "UMS.Workers exposes
