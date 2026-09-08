@@ -49,17 +49,6 @@ public abstract class MetricRefreshJobBase(
     private const int MaxAttempts = 3;
     private static readonly TimeSpan[] BackoffDelays = [TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5)];
 
-    /// <summary>The stable <see cref="DashboardMetric"/> key this job owns, e.g. <c>"academic-dashboard"</c>.</summary>
-    protected abstract string MetricKey { get; }
-
-    protected abstract string DisplayName { get; }
-
-    /// <summary>Set well above this job's own expected worst-case runtime (design-decisions.md's own residual note: too short risks a legitimate slow run's lease being stolen, recreating the exact interleaving this mechanism exists to prevent).</summary>
-    protected abstract TimeSpan LeaseTtl { get; }
-
-    /// <summary>Calls whichever source module(s)' public reporting-query contract(s) this dashboard needs and returns the already-aggregated payload, serialized. Never a raw cross-schema join (requirement-spec.md §4).</summary>
-    protected abstract Task<string> ComputePayloadJsonAsync(CancellationToken cancellationToken);
-
     public async Task RunAsync(CancellationToken cancellationToken = default)
     {
         await using var handle = await lease.TryAcquireAsync(MetricKey, LeaseTtl, cancellationToken).ConfigureAwait(false);
@@ -117,4 +106,15 @@ public abstract class MetricRefreshJobBase(
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
+
+    /// <summary>The stable <see cref="DashboardMetric"/> key this job owns, e.g. <c>"academic-dashboard"</c>.</summary>
+    protected abstract string MetricKey { get; }
+
+    protected abstract string DisplayName { get; }
+
+    /// <summary>Set well above this job's own expected worst-case runtime (design-decisions.md's own residual note: too short risks a legitimate slow run's lease being stolen, recreating the exact interleaving this mechanism exists to prevent).</summary>
+    protected abstract TimeSpan LeaseTtl { get; }
+
+    /// <summary>Calls whichever source module(s)' public reporting-query contract(s) this dashboard needs and returns the already-aggregated payload, serialized. Never a raw cross-schema join (requirement-spec.md §4).</summary>
+    protected abstract Task<string> ComputePayloadJsonAsync(CancellationToken cancellationToken);
 }

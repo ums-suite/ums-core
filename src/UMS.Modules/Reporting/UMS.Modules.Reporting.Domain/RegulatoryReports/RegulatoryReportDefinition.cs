@@ -125,17 +125,17 @@ public sealed class RegulatoryReportDefinition : AggregateRoot<RegulatoryReportD
     {
         if (string.IsNullOrWhiteSpace(name))
         {
-            return Error.Validation("regulatory_report_definition.name_required", "A RegulatoryReportDefinition name is required.");
+            return Result.Failure(Error.Validation("regulatory_report_definition.name_required", "A RegulatoryReportDefinition name is required."));
         }
 
         if (fields.Count == 0)
         {
-            return Error.Validation("regulatory_report_definition.fields_required", "At least one field selection is required.");
+            return Result.Failure(Error.Validation("regulatory_report_definition.fields_required", "At least one field selection is required."));
         }
 
         if (supportedFormats == RegulatoryReportFormat.None)
         {
-            return Error.Validation("regulatory_report_definition.format_required", "At least one output format must be supported.");
+            return Result.Failure(Error.Validation("regulatory_report_definition.format_required", "At least one output format must be supported."));
         }
 
         Name = name.Trim();

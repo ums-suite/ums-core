@@ -115,16 +115,15 @@ public sealed class RegulatoryReportRun : AggregateRoot<RegulatoryReportRunId>
 
     public static string ComputeParametersHash(RegulatoryReportDefinitionId definitionId, string parametersJson)
     {
-        using var sha = System.Security.Cryptography.SHA256.Create();
         var bytes = System.Text.Encoding.UTF8.GetBytes($"{definitionId.Value:N}|{parametersJson}");
-        return Convert.ToHexString(sha.ComputeHash(bytes));
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
     }
 
     public Result Start(DateTimeOffset asOf)
     {
         if (Status != RegulatoryReportRunStatus.Pending)
         {
-            return Error.Conflict("regulatory_report_run.invalid_transition", $"Cannot start a run in status '{Status}'.");
+            return Result.Failure(Error.Conflict("regulatory_report_run.invalid_transition", $"Cannot start a run in status '{Status}'."));
         }
 
         Status = RegulatoryReportRunStatus.Running;
@@ -137,7 +136,7 @@ public sealed class RegulatoryReportRun : AggregateRoot<RegulatoryReportRunId>
     {
         if (Status != RegulatoryReportRunStatus.Running)
         {
-            return Error.Conflict("regulatory_report_run.invalid_transition", $"Cannot complete a run in status '{Status}'.");
+            return Result.Failure(Error.Conflict("regulatory_report_run.invalid_transition", $"Cannot complete a run in status '{Status}'."));
         }
 
         Status = RegulatoryReportRunStatus.Completed;
@@ -151,7 +150,7 @@ public sealed class RegulatoryReportRun : AggregateRoot<RegulatoryReportRunId>
     {
         if (Status != RegulatoryReportRunStatus.Running)
         {
-            return Error.Conflict("regulatory_report_run.invalid_transition", $"Cannot complete a run in status '{Status}'.");
+            return Result.Failure(Error.Conflict("regulatory_report_run.invalid_transition", $"Cannot complete a run in status '{Status}'."));
         }
 
         Status = RegulatoryReportRunStatus.Completed;

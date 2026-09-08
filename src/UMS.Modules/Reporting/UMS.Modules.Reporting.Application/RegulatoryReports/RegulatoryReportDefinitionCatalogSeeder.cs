@@ -28,48 +28,81 @@ public static class RegulatoryReportDefinitionCatalogSeeder
 {
     public static IReadOnlyList<RegulatoryReportDefinitionSeed> Catalog { get; } =
     [
-        new("Student Enrollment", RegulatoryReportCategory.StudentEnrollment, ["academic-dashboard"],
+        new(
+            "Student Enrollment",
+            RegulatoryReportCategory.StudentEnrollment,
+            ["academic-dashboard"],
             [("TotalEnrollments", "Total Enrollments"), ("ActiveEnrollments", "Active Enrollments"), ("NewEnrollmentsThisSession", "New Enrollments (Current Session)"), ("GraduatingStudents", "Graduating Students")]),
 
         // Documented proxy: true gender distribution needs Student's own demographic fields (no
         // reporting-query contract exists for Student in this base flow) - approximated with the
         // aggregate enrollment count until that contract exists.
-        new("Gender Distribution", RegulatoryReportCategory.GenderDistribution, ["academic-dashboard"],
+        new(
+            "Gender Distribution",
+            RegulatoryReportCategory.GenderDistribution,
+            ["academic-dashboard"],
             [("TotalEnrollments", "Total Enrollments (gender breakdown pending Student reporting contract)")]),
 
-        new("Program Statistics", RegulatoryReportCategory.ProgramStatistics, ["academic-dashboard"],
+        new(
+            "Program Statistics",
+            RegulatoryReportCategory.ProgramStatistics,
+            ["academic-dashboard"],
             [("TotalEnrollments", "Total Enrollments"), ("CourseOfferingPerformance", "Course/Department Performance")]),
 
-        new("Faculty/Staff Statistics", RegulatoryReportCategory.FacultyStaffStatistics, ["faculty-dashboard"],
+        new(
+            "Faculty/Staff Statistics",
+            RegulatoryReportCategory.FacultyStaffStatistics,
+            ["faculty-dashboard"],
             [("TotalFacultyMembers", "Total Faculty Members"), ("FacultyByStatus", "Faculty By Status")]),
 
-        new("Graduation", RegulatoryReportCategory.Graduation, ["academic-dashboard"],
+        new(
+            "Graduation",
+            RegulatoryReportCategory.Graduation,
+            ["academic-dashboard"],
             [("GraduatingStudents", "Graduating Students"), ("PassRate", "Pass Rate")]),
 
-        new("Academic Performance", RegulatoryReportCategory.AcademicPerformance, ["academic-dashboard"],
+        new(
+            "Academic Performance",
+            RegulatoryReportCategory.AcademicPerformance,
+            ["academic-dashboard"],
             [("GradeDistribution", "Grade Distribution"), ("PassRate", "Pass Rate"), ("DropoutRate", "Dropout Rate")]),
 
         // Documented proxy: Faculty's own ResearchProfile output data has no reporting-query
         // contract in this base flow - approximated with faculty headcount pending that contract.
-        new("Research", RegulatoryReportCategory.Research, ["faculty-dashboard"],
+        new(
+            "Research",
+            RegulatoryReportCategory.Research,
+            ["faculty-dashboard"],
             [("TotalFacultyMembers", "Total Faculty Members (research-output detail pending Faculty ResearchProfile reporting contract)")]),
 
-        new("Financial Information", RegulatoryReportCategory.FinancialInformation, ["financial-dashboard"],
+        new(
+            "Financial Information",
+            RegulatoryReportCategory.FinancialInformation,
+            ["financial-dashboard"],
             [("TotalCollection", "Total Collection"), ("OutstandingFees", "Outstanding Fees"), ("TotalRefunds", "Total Refunds"), ("RevenueByCategory", "Revenue By Category")]),
 
         // Documented proxy: a full campus facilities inventory needs Organization's own data (no
         // reporting-query contract in this base flow) - approximated with Hostel bed capacity.
-        new("Infrastructure", RegulatoryReportCategory.Infrastructure, ["hostel-dashboard"],
+        new(
+            "Infrastructure",
+            RegulatoryReportCategory.Infrastructure,
+            ["hostel-dashboard"],
             [("TotalBeds", "Total Hostel Beds"), ("OccupiedBeds", "Occupied Beds"), ("OccupancyPercentage", "Occupancy Percentage (campus-wide facilities inventory pending Organization reporting contract)")]),
 
         // Documented proxy: no distinct Scholarship concept is exposed by Finance's reporting
         // query in this base flow - approximated with the refund aggregate.
-        new("Scholarships", RegulatoryReportCategory.Scholarships, ["financial-dashboard"],
+        new(
+            "Scholarships",
+            RegulatoryReportCategory.Scholarships,
+            ["financial-dashboard"],
             [("TotalRefunds", "Total Refunds/Waivers (dedicated Scholarship tracking pending a future Finance reporting-contract extension)")]),
 
         // Documented proxy: nationality/international-student status is a Student-owned field with
         // no reporting-query contract in this base flow - approximated with total enrollment.
-        new("International Students", RegulatoryReportCategory.InternationalStudents, ["academic-dashboard"],
+        new(
+            "International Students",
+            RegulatoryReportCategory.InternationalStudents,
+            ["academic-dashboard"],
             [("TotalEnrollments", "Total Enrollments (international-student breakdown pending Student reporting contract)")]),
     ];
 }

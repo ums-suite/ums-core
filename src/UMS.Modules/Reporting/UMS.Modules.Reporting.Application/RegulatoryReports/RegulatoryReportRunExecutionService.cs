@@ -37,7 +37,6 @@ namespace UMS.Modules.Reporting.Application.RegulatoryReports;
 /// </para>
 /// </summary>
 public sealed class RegulatoryReportRunExecutionService(
-    IRegulatoryReportRunRepository runs,
     IDashboardMetricRepository dashboardMetrics,
     IDocumentGenerationRequester documentGenerationRequester,
     INotificationRequestPublisher notifications,
@@ -54,7 +53,11 @@ public sealed class RegulatoryReportRunExecutionService(
         {
             // Already picked up (or terminal) by a previous, since-crashed attempt at this same
             // poll pass - ADR-0014 idempotency: skip silently rather than double-execute.
-            logger.LogInformation("RegulatoryReportRun {RunId}: skipped - not in a startable state ({Status}).", run.Id, run.Status);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("RegulatoryReportRun {RunId}: skipped - not in a startable state ({Status}).", run.Id, run.Status);
+            }
+
             return;
         }
 
@@ -115,6 +118,51 @@ public sealed class RegulatoryReportRunExecutionService(
 
         await unitOfWork.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         await PublishOutcomeNotificationAsync(run, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static string FormatJsonElement(JsonElement element) => element.ValueKind switch
+    {
+        JsonValueKind.String => element.GetString() ?? string.Empty,
+        JsonValueKind.Null => string.Empty,
+        _ => element.GetRawText(),
+    };
+
+    private static string BuildCsv(RegulatoryReportDefinitionSnapshot snapshot, IReadOnlyDictionary<string, string> values, DateTimeOffset? dataAsOf, bool anySourceMissing)
+    {
+        var builder = new StringBuilder();
+        builder.Append("# Report: ").Append(EscapeCsv(snapshot.Name)).Append('\n');
+        builder.Append("# data_as_of: ").Append(dataAsOf?.ToString("O") ?? "not yet computed").Append('\n');
+        if (anySourceMissing)
+        {
+            builder.Append("# Note: one or more referenced source dashboards have not yet been computed - affected fields show N/A.\n");
+        }
+
+        var orderedFields = snapshot.FieldSelections.OrderBy(f => f.Ordinal).ToList();
+        builder.Append(string.Join(',', orderedFields.Select(f => EscapeCsv(f.Label)))).Append('\n');
+        builder.Append(string.Join(',', orderedFields.Select(f => EscapeCsv(values.GetValueOrDefault(f.FieldKey, "N/A"))))).Append('\n');
+        return builder.ToString();
+    }
+
+    private static string EscapeCsv(string value) =>
+        value.Contains(',') || value.Contains('"') || value.Contains('\n')
+            ? "\"" + value.Replace("\"", "\"\"") + "\""
+            : value;
+
+    private static Dictionary<string, string> BuildDocumentFields(RegulatoryReportDefinitionSnapshot snapshot, IReadOnlyDictionary<string, string> values, DateTimeOffset? dataAsOf, bool anySourceMissing)
+    {
+        var fields = new Dictionary<string, string>
+        {
+            ["reportName"] = snapshot.Name,
+            ["dataAsOf"] = dataAsOf?.ToString("O") ?? "not yet computed",
+            ["staleDataNote"] = anySourceMissing ? "One or more referenced source dashboards have not yet been computed." : string.Empty,
+        };
+
+        foreach (var field in snapshot.FieldSelections.OrderBy(f => f.Ordinal))
+        {
+            fields[field.FieldKey] = values.GetValueOrDefault(field.FieldKey, "N/A");
+        }
+
+        return fields;
     }
 
     private async Task PublishOutcomeNotificationAsync(RegulatoryReportRun run, CancellationToken cancellationToken)
@@ -190,50 +238,5 @@ public sealed class RegulatoryReportRunExecutionService(
         }
 
         return (values, minAsOf, anySourceMissing);
-    }
-
-    private static string FormatJsonElement(JsonElement element) => element.ValueKind switch
-    {
-        JsonValueKind.String => element.GetString() ?? string.Empty,
-        JsonValueKind.Null => string.Empty,
-        _ => element.GetRawText(),
-    };
-
-    private static string BuildCsv(RegulatoryReportDefinitionSnapshot snapshot, IReadOnlyDictionary<string, string> values, DateTimeOffset? dataAsOf, bool anySourceMissing)
-    {
-        var builder = new StringBuilder();
-        builder.Append("# Report: ").Append(EscapeCsv(snapshot.Name)).Append('\n');
-        builder.Append("# data_as_of: ").Append(dataAsOf?.ToString("O") ?? "not yet computed").Append('\n');
-        if (anySourceMissing)
-        {
-            builder.Append("# Note: one or more referenced source dashboards have not yet been computed - affected fields show N/A.\n");
-        }
-
-        var orderedFields = snapshot.FieldSelections.OrderBy(f => f.Ordinal).ToList();
-        builder.Append(string.Join(',', orderedFields.Select(f => EscapeCsv(f.Label)))).Append('\n');
-        builder.Append(string.Join(',', orderedFields.Select(f => EscapeCsv(values.GetValueOrDefault(f.FieldKey, "N/A"))))).Append('\n');
-        return builder.ToString();
-    }
-
-    private static string EscapeCsv(string value) =>
-        value.Contains(',') || value.Contains('"') || value.Contains('\n')
-            ? "\"" + value.Replace("\"", "\"\"") + "\""
-            : value;
-
-    private static IReadOnlyDictionary<string, string> BuildDocumentFields(RegulatoryReportDefinitionSnapshot snapshot, IReadOnlyDictionary<string, string> values, DateTimeOffset? dataAsOf, bool anySourceMissing)
-    {
-        var fields = new Dictionary<string, string>
-        {
-            ["reportName"] = snapshot.Name,
-            ["dataAsOf"] = dataAsOf?.ToString("O") ?? "not yet computed",
-            ["staleDataNote"] = anySourceMissing ? "One or more referenced source dashboards have not yet been computed." : string.Empty,
-        };
-
-        foreach (var field in snapshot.FieldSelections.OrderBy(f => f.Ordinal))
-        {
-            fields[field.FieldKey] = values.GetValueOrDefault(field.FieldKey, "N/A");
-        }
-
-        return fields;
     }
 }
