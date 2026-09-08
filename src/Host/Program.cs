@@ -6,6 +6,8 @@ using UMS.Modules.Academic.Api;
 using UMS.Modules.Academic.Infrastructure;
 using UMS.Modules.Admission.Api;
 using UMS.Modules.Admission.Infrastructure;
+using UMS.Modules.Alumni.Api;
+using UMS.Modules.Alumni.Infrastructure;
 using UMS.Modules.Audit.Api;
 using UMS.Modules.Audit.Infrastructure;
 using UMS.Modules.Content.Api;
@@ -179,6 +181,13 @@ builder.Services.AddContentModule(builder.Configuration);
 // by no permission at all.
 builder.Services.AddResearchModule(builder.Configuration);
 
+// Alumni (release/DEVELOPMENT_PLAN.md Flow #29) - depends on Identity, Student (StudentGraduated
+// consumption only, via UMS.Shared.Student.IStudentStatusChecker - never a live query into Student's
+// schema, module-boundaries.md/ADR-0002), and Finance (Donation payment delegation via
+// UMS.Shared.Finance.IInvoiceRequester, ADR-0008). UMS.Shared.Notifications.INotificationRequestIntake
+// (ALM-15 fan-out) is already registered above.
+builder.Services.AddAlumniModule(builder.Configuration);
+
 // Reporting (release/DEVELOPMENT_PLAN.md Flow #22) - ADR-0013 permits this one module to depend on
 // every other module's own READ-ONLY cross-module reporting-query contract
 // (UMS.Shared.Academic/Admission/Finance/Faculty/Hostel/Library.IXxxReportingQuery), all real by
@@ -283,6 +292,7 @@ await app.Services.UseHostelModuleAsync();
 await app.Services.UseLibraryModuleAsync();
 await app.Services.UseContentModuleAsync();
 await app.Services.UseResearchModuleAsync();
+await app.Services.UseAlumniModuleAsync();
 await app.Services.UseReportingModuleAsync();
 
 app.UseUmsObservability();
@@ -322,6 +332,7 @@ app.MapHostelModule();
 app.MapLibraryModule();
 app.MapContentModule();
 app.MapResearchModule();
+app.MapAlumniModule();
 app.MapReportingModule();
 
 app.Run();
