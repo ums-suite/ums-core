@@ -37,7 +37,14 @@ internal sealed class RegulatoryReportDefinitionConfiguration : IEntityTypeConfi
         {
             field.ToTable("regulatory_report_definition_fields");
             field.WithOwner().HasForeignKey("DefinitionId");
-            field.Property<Guid>("DefinitionId").HasColumnName("definition_id");
+
+            // The shadow FK must be declared as the OWNER's own strongly-typed id CLR type (with
+            // its own matching conversion), not a plain Guid - EF Core rejects a Guid-typed FK
+            // against a RegulatoryReportDefinitionId-typed principal key as "not compatible"
+            // (mirrors Faculty's own ResearchProfileConfiguration/Publications shadow-FK shape).
+            field.Property<RegulatoryReportDefinitionId>("DefinitionId")
+                .HasConversion(id => id.Value, value => new RegulatoryReportDefinitionId(value))
+                .HasColumnName("definition_id");
 
             field.Property<int>("RowId").ValueGeneratedOnAdd().HasColumnName("row_id");
             field.HasKey("RowId");

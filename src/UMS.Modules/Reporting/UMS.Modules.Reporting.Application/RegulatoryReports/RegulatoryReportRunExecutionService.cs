@@ -83,7 +83,7 @@ public sealed class RegulatoryReportRunExecutionService(
                 if (run.Format == RegulatoryReportFormat.Csv)
                 {
                     var csv = BuildCsv(snapshot, values, dataAsOf, anySourceMissing);
-                    run.CompleteWithInlineCsv(csv, clock.UtcNow);
+                    run.CompleteWithInlineCsv(csv, clock.UtcNow, dataAsOf);
                 }
                 else
                 {
@@ -105,7 +105,7 @@ public sealed class RegulatoryReportRunExecutionService(
                     }
                     else
                     {
-                        run.CompleteWithGeneratedDocument(generationResult.Value.DocumentId, clock.UtcNow);
+                        run.CompleteWithGeneratedDocument(generationResult.Value.DocumentId, clock.UtcNow, dataAsOf);
                     }
                 }
             }

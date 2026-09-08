@@ -132,7 +132,17 @@ public sealed class RegulatoryReportRun : AggregateRoot<RegulatoryReportRunId>
         return Result.Success();
     }
 
-    public Result CompleteWithGeneratedDocument(Guid generatedDocumentId, DateTimeOffset completedAt)
+    /// <summary>
+    /// <paramref name="dataAsOf"/> overwrites the wall-clock value <see cref="Start"/> stamped on
+    /// <see cref="AsOf"/> with <c>RegulatoryReportRunExecutionService</c>'s own conservative
+    /// (minimum-across-referenced-dashboards) bound - see that service's own class remarks. Passed
+    /// explicitly (never optional-defaulted) so every caller makes a conscious choice, including
+    /// <see langword="null"/> when no referenced source dashboard had ever been computed (this
+    /// run's own "not yet computed" case, mirroring
+    /// <see cref="UMS.Modules.Reporting.Domain.DashboardMetrics.DashboardMetric"/>'s identical
+    /// never-fabricate posture).
+    /// </summary>
+    public Result CompleteWithGeneratedDocument(Guid generatedDocumentId, DateTimeOffset completedAt, DateTimeOffset? dataAsOf)
     {
         if (Status != RegulatoryReportRunStatus.Running)
         {
@@ -142,11 +152,13 @@ public sealed class RegulatoryReportRun : AggregateRoot<RegulatoryReportRunId>
         Status = RegulatoryReportRunStatus.Completed;
         ResultDocumentId = generatedDocumentId;
         CompletedAt = completedAt;
+        AsOf = dataAsOf;
         Raise(new RegulatoryReportRunCompleted(Id.Value, DefinitionId.Value, RequestedByUserId, completedAt));
         return Result.Success();
     }
 
-    public Result CompleteWithInlineCsv(string csvContent, DateTimeOffset completedAt)
+    /// <summary>See <see cref="CompleteWithGeneratedDocument"/>'s own remarks on <paramref name="dataAsOf"/>.</summary>
+    public Result CompleteWithInlineCsv(string csvContent, DateTimeOffset completedAt, DateTimeOffset? dataAsOf)
     {
         if (Status != RegulatoryReportRunStatus.Running)
         {
@@ -156,6 +168,7 @@ public sealed class RegulatoryReportRun : AggregateRoot<RegulatoryReportRunId>
         Status = RegulatoryReportRunStatus.Completed;
         ResultCsvContent = csvContent;
         CompletedAt = completedAt;
+        AsOf = dataAsOf;
         Raise(new RegulatoryReportRunCompleted(Id.Value, DefinitionId.Value, RequestedByUserId, completedAt));
         return Result.Success();
     }
