@@ -30,6 +30,8 @@ using UMS.Modules.Organization.Api;
 using UMS.Modules.Organization.Infrastructure;
 using UMS.Modules.Reporting.Api;
 using UMS.Modules.Reporting.Infrastructure;
+using UMS.Modules.Research.Api;
+using UMS.Modules.Research.Infrastructure;
 using UMS.Modules.Student.Api;
 using UMS.Modules.Student.Infrastructure;
 using UMS.Shared.Authorization;
@@ -168,6 +170,15 @@ builder.Services.AddLibraryModule(builder.Configuration);
 // INotificationRequestIntake (CNT-13 urgent-notice fan-out), all real by this point.
 builder.Services.AddContentModule(builder.Configuration);
 
+// Research (Flow #25) - depends ONLY on Identity, Organization, and Faculty (module-boundaries.md;
+// deliberately never Student, never Finance): resolves UMS.Shared.Faculty.IFacultyMemberLookup (every
+// FacultyMemberId reference - PI, Co-I, author, advisor - validated at write time),
+// UMS.Shared.Documents.IUploadedArtifactRequester (RES-11 repository-file upload), and
+// UMS.Shared.Notifications.INotificationRequestIntake (RES-5/RES-15 fan-out), all already registered
+// above. The anonymous public showcase (RES-13) is mapped as part of MapResearchModule below, gated
+// by no permission at all.
+builder.Services.AddResearchModule(builder.Configuration);
+
 // Reporting (release/DEVELOPMENT_PLAN.md Flow #22) - ADR-0013 permits this one module to depend on
 // every other module's own READ-ONLY cross-module reporting-query contract
 // (UMS.Shared.Academic/Admission/Finance/Faculty/Hostel/Library.IXxxReportingQuery), all real by
@@ -271,6 +282,7 @@ await app.Services.UseAdmissionModuleAsync();
 await app.Services.UseHostelModuleAsync();
 await app.Services.UseLibraryModuleAsync();
 await app.Services.UseContentModuleAsync();
+await app.Services.UseResearchModuleAsync();
 await app.Services.UseReportingModuleAsync();
 
 app.UseUmsObservability();
@@ -309,6 +321,7 @@ app.MapAdmissionModule();
 app.MapHostelModule();
 app.MapLibraryModule();
 app.MapContentModule();
+app.MapResearchModule();
 app.MapReportingModule();
 
 app.Run();

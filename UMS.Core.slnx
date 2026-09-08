@@ -117,6 +117,12 @@
     <Project Path="src/UMS.Modules/Content/UMS.Modules.Content.Infrastructure/UMS.Modules.Content.Infrastructure.csproj" />
     <Project Path="src/UMS.Modules/Content/UMS.Modules.Content.Api/UMS.Modules.Content.Api.csproj" />
   </Folder>
+  <Folder Name="/src/UMS.Modules/Research/">
+    <Project Path="src/UMS.Modules/Research/UMS.Modules.Research.Domain/UMS.Modules.Research.Domain.csproj" />
+    <Project Path="src/UMS.Modules/Research/UMS.Modules.Research.Application/UMS.Modules.Research.Application.csproj" />
+    <Project Path="src/UMS.Modules/Research/UMS.Modules.Research.Infrastructure/UMS.Modules.Research.Infrastructure.csproj" />
+    <Project Path="src/UMS.Modules/Research/UMS.Modules.Research.Api/UMS.Modules.Research.Api.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/UMS.Shared.Tests/UMS.Shared.Tests.csproj" />
     <Project Path="tests/UMS.Modules.Identity.UnitTests/UMS.Modules.Identity.UnitTests.csproj" />
@@ -149,6 +155,8 @@
     <Project Path="tests/UMS.Modules.Reporting.IntegrationTests/UMS.Modules.Reporting.IntegrationTests.csproj" />
     <Project Path="tests/UMS.Modules.Content.UnitTests/UMS.Modules.Content.UnitTests.csproj" />
     <Project Path="tests/UMS.Modules.Content.IntegrationTests/UMS.Modules.Content.IntegrationTests.csproj" />
+    <Project Path="tests/UMS.Modules.Research.UnitTests/UMS.Modules.Research.UnitTests.csproj" />
+    <Project Path="tests/UMS.Modules.Research.IntegrationTests/UMS.Modules.Research.IntegrationTests.csproj" />
   </Folder>
   <Folder Name="/tests/ArchitectureTests/">
     <Project Path="tests/ArchitectureTests/UMS.ArchitectureTests.csproj" />

@@ -13,6 +13,7 @@ using UMS.Modules.Library.Infrastructure;
 using UMS.Modules.Notifications.Infrastructure;
 using UMS.Modules.Organization.Infrastructure;
 using UMS.Modules.Reporting.Infrastructure;
+using UMS.Modules.Research.Infrastructure;
 using UMS.Modules.Student.Infrastructure;
 using UMS.Shared.Observability;
 using UMS.Shared.Resilience;
@@ -28,6 +29,7 @@ using UMS.Workers.Learning;
 using UMS.Workers.Library;
 using UMS.Workers.Notifications;
 using UMS.Workers.Reporting;
+using UMS.Workers.Research;
 using UMS.Workers.Student;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -183,6 +185,18 @@ builder.Services.AddHostedService<BannerSchedulingSweepWorker>();
 builder.Services.AddHostedService<DownloadResourceSchedulingSweepWorker>();
 builder.Services.AddHostedService<NoticeNotificationRelayWorker>();
 
+// Research (Flow #25) - three background pieces: RES-12's daily lapsed-embargo sweep (design-
+// decisions.md's own worker-over-lazy-evaluation decision, keeping the public showcase genuinely
+// HTTP-cacheable), RES-5's Faculty-status relay (the platform's newest consumer of Faculty's own
+// outbox, mirroring Library's own FacultyStatusRelayWorker exactly against the same
+// faculty."OutboxMessages" table), and the Notifications fan-out relay (GrantFunded/GrantClosed/
+// GrantReported/GrantPiReassignmentRequired/InstitutionalRepositoryEntryEmbargoLifted). Depends on
+// Identity, Organization, and Faculty (module-boundaries.md) - all already registered above.
+builder.Services.AddResearchModule(builder.Configuration);
+builder.Services.AddHostedService<ResearchEmbargoLiftSweepWorker>();
+builder.Services.AddHostedService<ResearchFacultyStatusRelayWorker>();
+builder.Services.AddHostedService<ResearchNotificationRelayWorker>();
+
 // Reporting (release/DEVELOPMENT_PLAN.md Flow #22) - ADR-0013's "depends on everything" module:
 // six independent per-dashboard-family refresh workers (RPT-1/RPT-4..9, design-decisions.md - no
 // single mega-scheduler), each acquiring RPT-1's Redis lease before running, plus the
@@ -232,6 +246,7 @@ await app.Services.UseAdmissionModuleAsync();
 await app.Services.UseHostelModuleAsync();
 await app.Services.UseLibraryModuleAsync();
 await app.Services.UseContentModuleAsync();
+await app.Services.UseResearchModuleAsync();
 await app.Services.UseReportingModuleAsync();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
