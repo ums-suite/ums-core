@@ -99,6 +99,12 @@
     <ProjectReference Include="..\UMS.Modules\Research\UMS.Modules.Research.Api\UMS.Modules.Research.Api.csproj" />
     <ProjectReference Include="..\UMS.Modules\Research\UMS.Modules.Research.Infrastructure\UMS.Modules.Research.Infrastructure.csproj" />
 
+    <!-- Alumni (Flow #29) - depends on Identity, Student (StudentGraduated consumption only, via
+         UMS.Shared.Student.IStudentStatusChecker), and Finance (Donation payment delegation via
+         UMS.Shared.Finance.IInvoiceRequester), all already registered above. -->
+    <ProjectReference Include="..\UMS.Modules\Alumni\UMS.Modules.Alumni.Api\UMS.Modules.Alumni.Api.csproj" />
+    <ProjectReference Include="..\UMS.Modules\Alumni\UMS.Modules.Alumni.Infrastructure\UMS.Modules.Alumni.Infrastructure.csproj" />
+
     <!-- Reporting (release/DEVELOPMENT_PLAN.md Flow #22) - ADR-0013 permits it to depend on every
          other module's own READ-ONLY cross-module reporting-query contract (Academic, Admission,
          Finance, Faculty, Hostel, Library); registered last since it depends on all of the above,
