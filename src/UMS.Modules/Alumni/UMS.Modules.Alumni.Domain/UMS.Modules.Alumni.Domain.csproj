@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>UMS.Modules.Alumni.Domain</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.Domain\UMS.Shared.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\UMS.Shared.ErrorHandling\UMS.Shared.ErrorHandling.csproj" />
+  </ItemGroup>
+
+</Project>
