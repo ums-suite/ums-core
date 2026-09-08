@@ -15,8 +15,8 @@ internal sealed class FinancePermissionManifest : IPermissionManifest
         new(FinancePermissions.InvoiceRead, "Read Invoices (Accountant/Admin batch access - an Invoice's own owner reads it via ownership, not this permission)."),
         new(FinancePermissions.PaymentInitiate, "Initiate a Payment against an owned Invoice."),
         new(FinancePermissions.PaymentRead, "Read Payments (Accountant/Admin batch access - a Payment's own owner reads it via ownership, not this permission)."),
-        new(FinancePermissions.PaymentRefund, "Refund a Payment (Accountant/Admin) - reserved for the remainder Finance pass, release/DEVELOPMENT_PLAN.md Flow #18; no endpoint gates on it yet."),
-        new(FinancePermissions.LedgerRead, "Read LedgerEntry rows (Accountant/Reporting) - reserved for the remainder Finance pass, Flow #18; no endpoint gates on it yet."),
-        new(FinancePermissions.ReconciliationReview, "Review a ReconciliationException (Accountant) - reserved for the remainder Finance pass, Flow #18; no endpoint gates on it yet."),
+        new(FinancePermissions.PaymentRefund, "Refund a Payment (Accountant/Admin)."),
+        new(FinancePermissions.LedgerRead, "Read LedgerEntry rows (Accountant/Reporting)."),
+        new(FinancePermissions.ReconciliationReview, "Review a ReconciliationException (Accountant) - the review/resolution read surface itself is a further, not-yet-decomposed ticket; no endpoint gates on it yet."),
     ];
 }

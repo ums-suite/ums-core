@@ -5,7 +5,9 @@ using Microsoft.Extensions.Options;
 using UMS.Modules.Finance.Application.Abstractions;
 using UMS.Modules.Finance.Application.FeeStructures;
 using UMS.Modules.Finance.Application.Invoices;
+using UMS.Modules.Finance.Application.Ledger;
 using UMS.Modules.Finance.Application.Payments;
+using UMS.Modules.Finance.Application.Reconciliation;
 using UMS.Modules.Finance.Infrastructure.Authorization;
 using UMS.Modules.Finance.Infrastructure.Documents;
 using UMS.Modules.Finance.Infrastructure.Gateway;
@@ -53,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<ILedgerEntryRepository, LedgerEntryRepository>();
+        services.AddScoped<IReconciliationExceptionRepository, ReconciliationExceptionRepository>();
         services.AddScoped<IOutboxReader, OutboxReader>();
 
         services.AddSingleton<IClock, SystemClock>();
@@ -69,6 +72,9 @@ public static class DependencyInjection
         services.AddScoped<PaymentService>();
         services.AddScoped<PaymentWebhookService>();
         services.AddScoped<StuckPaymentSweepService>();
+        services.AddScoped<RefundService>();
+        services.AddScoped<LedgerEntryQueryService>();
+        services.AddScoped<ReconciliationService>();
 
         return services;
     }

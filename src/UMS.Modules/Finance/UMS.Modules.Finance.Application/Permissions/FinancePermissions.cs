@@ -1,6 +1,13 @@
 namespace UMS.Modules.Finance.Application.Permissions;
 
-/// <summary>requirement-spec.md finance §2 Permission Strings (ADR-0006). <c>Refund</c>/<c>LedgerRead</c>/<c>ReconciliationReview</c> are declared here per the full spec's catalog but have no gated endpoint yet in this build's Payment Core slice (release/DEVELOPMENT_PLAN.md Flow #14) - Refund workflow, ledger reporting, and reconciliation review are the remainder Finance pass, Flow #18.</summary>
+/// <summary>
+/// requirement-spec.md finance §2 Permission Strings (ADR-0006). <c>PaymentRefund</c> gates
+/// <c>POST /payments/{id}/refund</c> and <c>LedgerRead</c> gates <c>GET /ledger-entries</c> (both
+/// FIN-11/FIN-13, Flow #18's remainder Finance pass). <c>ReconciliationReview</c> is still declared
+/// only for the full spec's catalog - FIN-14's daily reconciliation job (Flow #18) writes
+/// <c>ReconciliationException</c> rows for manual review, but the Accountant-facing review/resolution
+/// read surface itself is a further, not-yet-decomposed ticket.
+/// </summary>
 public static class FinancePermissions
 {
     public const string FeeStructureManage = "finance.feestructure.manage";

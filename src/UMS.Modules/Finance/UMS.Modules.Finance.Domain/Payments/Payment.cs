@@ -22,6 +22,7 @@ namespace UMS.Modules.Finance.Domain.Payments;
 public sealed class Payment : AggregateRoot<PaymentId>
 {
     private readonly List<PaymentTransaction> _transactions = [];
+    private readonly List<Refund> _refunds = [];
 
     private Payment()
     {
@@ -64,10 +65,17 @@ public sealed class Payment : AggregateRoot<PaymentId>
 
     public IReadOnlyCollection<PaymentTransaction> Transactions => _transactions.AsReadOnly();
 
+    public IReadOnlyCollection<Refund> Refunds => _refunds.AsReadOnly();
+
     /// <summary>This build's Payment Core slice only ever creates one attempt per Payment - see <see cref="PaymentTransaction"/>'s own remarks.</summary>
     public PaymentTransaction CurrentTransaction => _transactions[0];
 
     public bool IsNonTerminal => Status is PaymentStatus.Initiated or PaymentStatus.Pending;
+
+    /// <summary>design-decisions.md "Refund Concurrency Control": the amount-ceiling invariant's own running total, computed from already-committed Succeeded Refunds only - a Failed refund attempt never consumes any of the ceiling.</summary>
+    public decimal SucceededRefundTotal => _refunds.Where(r => r.Status == RefundStatus.Succeeded).Sum(r => r.Amount);
+
+    public decimal RemainingRefundableAmount => Amount.Amount - SucceededRefundTotal;
 
     public static Result<Payment> Initiate(Invoice invoice, Guid initiatedByUserId, string idempotencyKey, string gatewayName, DateTimeOffset now)
     {
@@ -150,6 +158,88 @@ public sealed class Payment : AggregateRoot<PaymentId>
         Status = PaymentStatus.Failed;
         UpdatedAt = now;
         Raise(new PaymentFailed(Id.Value, InvoiceId.Value, OwnerId, reason, now));
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// FIN-11: requirement-spec.md §2/§4 - a Refund reverses a previously Successful/Reconciled
+    /// Payment, capped at <see cref="Amount"/> minus the sum of prior Succeeded Refunds on this same
+    /// Payment; a Refund against an already-fully-refunded Payment is rejected outright. Pure
+    /// validation only (no mutation) - the caller (<c>RefundService</c>) runs this under the same
+    /// pessimistic row lock design-decisions.md's "Refund Concurrency Control" specifies, BEFORE
+    /// calling the gateway, and again defensively right before <see cref="RecordRefund"/> actually
+    /// commits the outcome.
+    /// </summary>
+    public Result ValidateRefundRequest(Money amount)
+    {
+        if (Status is not (PaymentStatus.Successful or PaymentStatus.Reconciled))
+        {
+            return Result.Failure(Error.Conflict("refund.payment_not_refundable", $"Payment '{Id}' is '{Status}' - only a Successful or Reconciled Payment can be refunded."));
+        }
+
+        if (RemainingRefundableAmount <= 0)
+        {
+            return Result.Failure(Error.Conflict("refund.payment_already_fully_refunded", $"Payment '{Id}' has already been fully refunded."));
+        }
+
+        if (amount.Amount <= 0)
+        {
+            return Result.Failure(Error.Validation("refund.amount_must_be_positive", "A Refund amount must be greater than zero."));
+        }
+
+        if (amount.Amount > RemainingRefundableAmount)
+        {
+            return Result.Failure(Error.Conflict("refund.amount_exceeds_remaining", $"Refund amount {amount.Amount} exceeds the {RemainingRefundableAmount} still refundable on Payment '{Id}'."));
+        }
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Commits the Refund outcome (gateway-routed or manually-settled) once known - re-validates the
+    /// amount-ceiling/status invariant defensively (the authoritative check runs under the same
+    /// pessimistic row lock this call itself executes inside; see <c>RefundService</c>) before
+    /// appending the Refund child row, raising <see cref="RefundRequested"/> for parity with
+    /// requirement-spec.md §3's own event catalog, and - only once the outcome is a genuine success -
+    /// <see cref="RefundCompleted"/>.
+    /// </summary>
+    public Result<Refund> RecordRefund(Money amount, Guid requestedByUserId, RefundMethod method, string? gatewayRefundReference, bool succeeded, string? failureReason, DateTimeOffset now)
+    {
+        var validation = ValidateRefundRequest(amount);
+        if (validation.IsFailure)
+        {
+            return validation.Error!;
+        }
+
+        var refund = Refund.Create(CurrentTransaction.Id, Id, amount, succeeded ? RefundStatus.Succeeded : RefundStatus.Failed, method, requestedByUserId, gatewayRefundReference, failureReason, now);
+        _refunds.Add(refund);
+        UpdatedAt = now;
+
+        Raise(new RefundRequested(refund.Id.Value, Id.Value, OwnerId, amount.Amount, now));
+
+        if (succeeded)
+        {
+            Raise(new RefundCompleted(refund.Id.Value, Id.Value, InvoiceId.Value, OwnerId, amount.Amount, now));
+        }
+
+        return refund;
+    }
+
+    /// <summary>
+    /// FIN-14: the daily reconciliation job's sole mutation path (design-decisions.md "Reconciliation
+    /// Job Concurrency-Safety") - Reconciled is reachable only from Successful (requirement-spec.md
+    /// §4), forward-only like every other transition on this aggregate.
+    /// </summary>
+    public Result MarkReconciled(DateTimeOffset now)
+    {
+        if (Status != PaymentStatus.Successful)
+        {
+            return Result.Failure(Error.Conflict("payment.not_reconcilable", $"Payment '{Id}' is '{Status}' - only a Successful Payment can be marked Reconciled."));
+        }
+
+        Status = PaymentStatus.Reconciled;
+        UpdatedAt = now;
+        Raise(new PaymentReconciled(Id.Value, InvoiceId.Value, now));
         return Result.Success();
     }
 }

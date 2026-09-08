@@ -12,10 +12,12 @@ namespace UMS.Workers.Finance;
 /// NotificationRelayWorker exactly.
 ///
 /// <para>
-/// Scope, stated explicitly: requirement-spec.md §6 also names <c>RefundCompleted</c> as a
-/// consumed event, but Refund has no write path in this build's Payment Core slice (release/
-/// DEVELOPMENT_PLAN.md Flow #14) - it is reserved for the remainder Finance pass, Flow #18, along
-/// with that event's own relay wiring.
+/// FIN-11 wires in the last event this worker's own remarks had previously flagged as deferred:
+/// requirement-spec.md §6 names <c>RefundCompleted</c> as consumed by Notifications (alongside the
+/// calling module and Reporting, neither of which is this worker's job) - now that Refund has a real
+/// write path (Flow #18's remainder Finance pass), it fans out here identically to
+/// <c>PaymentSucceeded</c>/<c>PaymentFailed</c> above it. <c>PaymentReconciled</c> is deliberately
+/// NOT added here - §6 names it as consumed by Reporting only, not Notifications.
 /// </para>
 /// </summary>
 public sealed class FinanceNotificationRelayWorker(IServiceScopeFactory scopeFactory, ILogger<FinanceNotificationRelayWorker> logger) : BackgroundService
@@ -28,6 +30,7 @@ public sealed class FinanceNotificationRelayWorker(IServiceScopeFactory scopeFac
         nameof(InvoiceGenerated),
         nameof(PaymentSucceeded),
         nameof(PaymentFailed),
+        nameof(RefundCompleted),
     ];
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -55,6 +58,7 @@ public sealed class FinanceNotificationRelayWorker(IServiceScopeFactory scopeFac
         nameof(InvoiceGenerated) => FromInvoiceGenerated(Deserialize<InvoiceGenerated>(payloadJson), outboxMessageId),
         nameof(PaymentSucceeded) => FromPaymentSucceeded(Deserialize<PaymentSucceeded>(payloadJson), outboxMessageId),
         nameof(PaymentFailed) => FromPaymentFailed(Deserialize<PaymentFailed>(payloadJson), outboxMessageId),
+        nameof(RefundCompleted) => FromRefundCompleted(Deserialize<RefundCompleted>(payloadJson), outboxMessageId),
         _ => throw new InvalidOperationException($"Unknown Finance notification event type '{eventType}'."),
     };
 
@@ -95,6 +99,19 @@ public sealed class FinanceNotificationRelayWorker(IServiceScopeFactory scopeFac
             {
                 ["invoiceId"] = evt.InvoiceId.ToString(),
                 ["reason"] = evt.Reason,
+            },
+            outboxMessageId.ToString());
+
+    private static FinanceNotificationRequest FromRefundCompleted(RefundCompleted evt, Guid outboxMessageId) =>
+        new(
+            evt.OwnerId,
+            nameof(RefundCompleted),
+            evt.RefundId.ToString(),
+            new Dictionary<string, string>
+            {
+                ["paymentId"] = evt.PaymentId.ToString(),
+                ["invoiceId"] = evt.InvoiceId.ToString(),
+                ["amount"] = evt.Amount.ToString("F2", CultureInfo.InvariantCulture),
             },
             outboxMessageId.ToString());
 

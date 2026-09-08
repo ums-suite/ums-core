@@ -105,15 +105,18 @@ builder.Services.AddHostedService<LearningNotificationRelayWorker>();
 // in this process to actually resolve Student's own repositories/services directly.
 builder.Services.AddHostedService<StudentBulkImportRelayWorker>();
 
-// Finance — Payment Core (release/DEVELOPMENT_PLAN.md Flow #14) - two relays mirroring Documents'/
-// Faculty's/Learning's own registrations immediately above: FIN-9/FIN-10's stuck-payment sweep
-// (checks the fake gateway directly for any Payment stuck Initiated/Pending past its own timeout)
-// and FIN-16's Notifications fan-out relay. Depends on Identity only (module-boundaries.md),
-// already registered above, plus Documents (FIN-15) and Notifications (FIN-16), both registered
-// above too.
+// Finance — Payment Core + remainder (release/DEVELOPMENT_PLAN.md Flows #14/#18) - three background
+// pieces mirroring Documents'/Faculty's/Learning's own registrations immediately above: FIN-9/FIN-10's
+// stuck-payment sweep (checks the fake gateway directly for any Payment stuck Initiated/Pending past
+// its own timeout), FIN-16's Notifications fan-out relay (now also carrying FIN-11's RefundCompleted),
+// and FIN-14's daily reconciliation job (compares Successful PaymentTransactions against the fake
+// gateway's own settlement report, flagging any mismatch as a ReconciliationException for manual
+// review). Depends on Identity only (module-boundaries.md), already registered above, plus Documents
+// (FIN-15) and Notifications (FIN-16), both registered above too.
 builder.Services.AddFinanceModule(builder.Configuration);
 builder.Services.AddHostedService<StuckPaymentSweepWorker>();
 builder.Services.AddHostedService<FinanceNotificationRelayWorker>();
+builder.Services.AddHostedService<ReconciliationWorker>();
 
 // Admission (release/DEVELOPMENT_PLAN.md Flow #15) - four relays mirroring the registrations
 // immediately above: the Finance-payment-confirmation relay (design-decisions.md's own

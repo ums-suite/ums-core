@@ -49,7 +49,16 @@ internal sealed class PaymentRepository(FinanceDbContext context) : IPaymentRepo
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+    /// <summary>FIN-14: design-decisions.md "Reconciliation Job Concurrency-Safety" - the daily reconciliation job's own unlocked candidate scan, the same shape as <see cref="GetNonTerminalUpdatedBeforeAsync"/> but for the Successful/not-yet-Reconciled slice of the state machine.</summary>
+    public async Task<IReadOnlyList<Payment>> GetSuccessfulUnreconciledUpdatedBeforeAsync(DateTimeOffset updatedBefore, int batchSize, CancellationToken cancellationToken = default) =>
+        await Query()
+            .Where(p => p.Status == PaymentStatus.Successful && p.UpdatedAt < updatedBefore)
+            .OrderBy(p => p.UpdatedAt)
+            .Take(batchSize)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
     public void Add(Payment payment) => context.Payments.Add(payment);
 
-    private IQueryable<Payment> Query() => context.Payments.Include(p => p.Transactions);
+    private IQueryable<Payment> Query() => context.Payments.Include(p => p.Transactions).Include(p => p.Refunds);
 }

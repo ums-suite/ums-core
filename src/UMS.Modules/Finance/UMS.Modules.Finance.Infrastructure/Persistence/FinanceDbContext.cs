@@ -9,6 +9,7 @@ using UMS.Modules.Finance.Domain.FeeStructures;
 using UMS.Modules.Finance.Domain.Invoices;
 using UMS.Modules.Finance.Domain.Ledger;
 using UMS.Modules.Finance.Domain.Payments;
+using UMS.Modules.Finance.Domain.Reconciliation;
 using UMS.Shared.Outbox;
 
 namespace UMS.Modules.Finance.Infrastructure.Persistence;
@@ -28,6 +29,8 @@ public sealed class FinanceDbContext(DbContextOptions<FinanceDbContext> options)
     internal DbSet<Payment> Payments => Set<Payment>();
 
     internal DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();
+
+    internal DbSet<ReconciliationException> ReconciliationExceptions => Set<ReconciliationException>();
 
     internal DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
@@ -88,6 +91,9 @@ public sealed class FinanceDbContext(DbContextOptions<FinanceDbContext> options)
                     return true;
                 case "ux_payment_transactions_gateway_transaction_id":
                     translated = new DuplicateValueException("PaymentTransaction", "GatewayTransactionId", "unknown");
+                    return true;
+                case "ux_refunds_id":
+                    translated = new DuplicateValueException("Refund", "Id", "unknown");
                     return true;
             }
         }

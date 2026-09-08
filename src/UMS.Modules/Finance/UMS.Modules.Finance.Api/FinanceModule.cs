@@ -17,6 +17,7 @@ public static class FinanceModule
         group.MapFeeStructureEndpoints();
         group.MapInvoiceEndpoints();
         group.MapPaymentEndpoints();
+        group.MapLedgerEntryEndpoints();
 
         return endpoints;
     }
