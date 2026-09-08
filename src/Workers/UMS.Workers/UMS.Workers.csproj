@@ -21,6 +21,7 @@
     <ProjectReference Include="..\..\UMS.Modules\Notifications\UMS.Modules.Notifications.Infrastructure\UMS.Modules.Notifications.Infrastructure.csproj" />
     <ProjectReference Include="..\..\UMS.Modules\Organization\UMS.Modules.Organization.Infrastructure\UMS.Modules.Organization.Infrastructure.csproj" />
     <ProjectReference Include="..\..\UMS.Modules\Admission\UMS.Modules.Admission.Infrastructure\UMS.Modules.Admission.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\UMS.Modules\Hostel\UMS.Modules.Hostel.Infrastructure\UMS.Modules.Hostel.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

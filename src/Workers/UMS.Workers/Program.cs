@@ -5,6 +5,7 @@ using UMS.Modules.Audit.Infrastructure;
 using UMS.Modules.Documents.Infrastructure;
 using UMS.Modules.Faculty.Infrastructure;
 using UMS.Modules.Finance.Infrastructure;
+using UMS.Modules.Hostel.Infrastructure;
 using UMS.Modules.Identity.Infrastructure;
 using UMS.Modules.Learning.Infrastructure;
 using UMS.Modules.Notifications.Infrastructure;
@@ -18,6 +19,7 @@ using UMS.Workers.AuditExports;
 using UMS.Workers.BulkDocumentGeneration;
 using UMS.Workers.Faculty;
 using UMS.Workers.Finance;
+using UMS.Workers.Hostel;
 using UMS.Workers.Learning;
 using UMS.Workers.Notifications;
 using UMS.Workers.Student;
@@ -131,6 +133,21 @@ builder.Services.AddHostedService<ExamAttemptTimeoutSweepWorker>();
 builder.Services.AddHostedService<PublishJobRelayWorker>();
 builder.Services.AddHostedService<AdmissionNotificationRelayWorker>();
 
+// Hostel (Flow #19) - five background pieces: HOS-9's Finance-payment relay (mirrors Admission's
+// own ApplicationPaymentConfirmationRelayWorker, reading finance.outbox_messages directly - Finance
+// already registered above), HOS-17's Student-status relay (the platform's first consumer of
+// Student's own outbox, mirroring the same pattern against student."OutboxMessages" - Student
+// already registered above for Learning's own chain), HOS-10's grace-period sweep, HOS-14's
+// waitlist re-ranking relay (polls Hostel's OWN outbox, event-driven off AllocationCheckedOut/
+// AllocationExpired), and the Notifications fan-out relay. Depends on Identity, Student, and
+// Finance (module-boundaries.md), all already registered above.
+builder.Services.AddHostelModule(builder.Configuration);
+builder.Services.AddHostedService<HostelFinancePaymentRelayWorker>();
+builder.Services.AddHostedService<HostelStudentStatusRelayWorker>();
+builder.Services.AddHostedService<HostelGracePeriodSweepWorker>();
+builder.Services.AddHostedService<HostelWaitlistReRankingRelayWorker>();
+builder.Services.AddHostedService<HostelNotificationRelayWorker>();
+
 // Same readiness contract as UMS.Host (ums-conventions.md, Observability: "UMS.Workers exposes
 // the same two endpoints"). Per-job outbox/queue-depth checks (ADR-0014) are added once the first
 // real worker (module-owned outbox relay) exists.
@@ -162,6 +179,7 @@ await app.Services.UseAcademicModuleAsync();
 await app.Services.UseLearningModuleAsync();
 await app.Services.UseFinanceModuleAsync();
 await app.Services.UseAdmissionModuleAsync();
+await app.Services.UseHostelModuleAsync();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
