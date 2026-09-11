@@ -14,6 +14,7 @@ using UMS.Modules.Alumni.Infrastructure.Authorization;
 using UMS.Modules.Alumni.Infrastructure.CrossModule;
 using UMS.Modules.Alumni.Infrastructure.Persistence;
 using UMS.Modules.Alumni.Infrastructure.Persistence.Repositories;
+using UMS.Shared.Alumni;
 using UMS.Shared.Authorization;
 
 namespace UMS.Modules.Alumni.Infrastructure;
@@ -59,6 +60,11 @@ public static class DependencyInjection
 
         services.AddScoped<IStudentGraduatedEventSource, StudentOutboxEventSource>();
         services.AddScoped<IFinancePaymentEventSource, FinanceOutboxEventSource>();
+
+        // Flow #31: the one real IAlumniReportingQuery implementation - see that contract's own
+        // remarks for why this is a deliberate scope extension (an eighth, Alumni-owned admin
+        // dashboard), mirroring Content's own ContentReportingQueryAdapter registration exactly.
+        services.AddScoped<IAlumniReportingQuery, CrossModule.AlumniReportingQueryAdapter>();
 
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IPermissionManifest, AlumniPermissionManifest>();

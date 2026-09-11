@@ -14,6 +14,7 @@ using UMS.Modules.Career.Infrastructure.CrossModule;
 using UMS.Modules.Career.Infrastructure.Persistence;
 using UMS.Modules.Career.Infrastructure.Persistence.Repositories;
 using UMS.Shared.Authorization;
+using UMS.Shared.Career;
 
 namespace UMS.Modules.Career.Infrastructure;
 
@@ -55,6 +56,11 @@ public static class DependencyInjection
         services.AddScoped<IOutboxReader, OutboxReader>();
 
         services.AddScoped<IStudentStatusEventSource, StudentOutboxEventSource>();
+
+        // Flow #31: the one real ICareerReportingQuery implementation - see that contract's own
+        // remarks for why this is a deliberate scope extension (a ninth, Career-owned admin
+        // dashboard), mirroring Content's own ContentReportingQueryAdapter registration exactly.
+        services.AddScoped<ICareerReportingQuery, CrossModule.CareerReportingQueryAdapter>();
 
         services.AddSingleton<IClock, SystemClock>();
         services.AddSingleton<IPermissionManifest, CareerPermissionManifest>();

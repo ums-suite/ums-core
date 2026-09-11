@@ -31,6 +31,14 @@ internal static class DashboardEndpoints
         // own remarks). No "research" route exists alongside it - the "research-dashboard" metric
         // has no Admin-facing GET route of its own (ResearchDashboardRefreshService's own remarks).
         MapDashboard(dashboards, "content", ContentDashboardRefreshService.MetricKeyValue, ReportingPermissions.DashboardReadContent);
+
+        // Flow #31: the eighth/ninth, Alumni-/Career-owned dashboards - the same deliberate scope
+        // extension Flow #26 already made for Content, applied identically here (see
+        // UMS.Shared.Alumni.IAlumniReportingQuery's/UMS.Shared.Career.ICareerReportingQuery's own
+        // remarks). Unlike Flow #26's Research half, neither module had an existing regulatory-report
+        // seeder proxy to fix - this is purely additive.
+        MapDashboard(dashboards, "alumni", AlumniDashboardRefreshService.MetricKeyValue, ReportingPermissions.DashboardReadAlumni);
+        MapDashboard(dashboards, "career", CareerDashboardRefreshService.MetricKeyValue, ReportingPermissions.DashboardReadCareer);
     }
 
     private static void MapDashboard(RouteGroupBuilder group, string route, string metricKey, string permission)

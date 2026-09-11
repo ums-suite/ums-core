@@ -25,6 +25,8 @@
     <Project Path="src/Shared/UMS.Shared.Library/UMS.Shared.Library.csproj" />
     <Project Path="src/Shared/UMS.Shared.Content/UMS.Shared.Content.csproj" />
     <Project Path="src/Shared/UMS.Shared.Research/UMS.Shared.Research.csproj" />
+    <Project Path="src/Shared/UMS.Shared.Alumni/UMS.Shared.Alumni.csproj" />
+    <Project Path="src/Shared/UMS.Shared.Career/UMS.Shared.Career.csproj" />
   </Folder>
   <Folder Name="/src/Workers/">
     <Project Path="src/Workers/UMS.Workers/UMS.Workers.csproj" />

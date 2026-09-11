@@ -10,7 +10,9 @@ using UMS.Modules.Reporting.Infrastructure;
 using UMS.Modules.Reporting.Infrastructure.Persistence;
 using UMS.Shared.Academic;
 using UMS.Shared.Admission;
+using UMS.Shared.Alumni;
 using UMS.Shared.Audit;
+using UMS.Shared.Career;
 using UMS.Shared.Content;
 using UMS.Shared.Documents;
 using UMS.Shared.Faculty;
@@ -57,6 +59,10 @@ public sealed class ReportingServiceFixture : IAsyncLifetime
 
     public FakeContentReportingQuery ContentQuery { get; } = new();
 
+    public FakeAlumniReportingQuery AlumniQuery { get; } = new();
+
+    public FakeCareerReportingQuery CareerQuery { get; } = new();
+
     public FakeAuditRecorder AuditRecorder { get; } = new();
 
     public FakeDocumentGenerationRequester DocumentGenerationRequester { get; } = new();
@@ -88,6 +94,8 @@ public sealed class ReportingServiceFixture : IAsyncLifetime
         services.AddSingleton<ILibraryReportingQuery>(LibraryQuery);
         services.AddSingleton<IResearchReportingQuery>(ResearchQuery);
         services.AddSingleton<IContentReportingQuery>(ContentQuery);
+        services.AddSingleton<IAlumniReportingQuery>(AlumniQuery);
+        services.AddSingleton<ICareerReportingQuery>(CareerQuery);
         services.AddSingleton<IAuditRecorder>(AuditRecorder);
         services.AddSingleton<IDocumentGenerationRequester>(DocumentGenerationRequester);
         services.AddSingleton<INotificationRequestIntake>(NotificationIntake);

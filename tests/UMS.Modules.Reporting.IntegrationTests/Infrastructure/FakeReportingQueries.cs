@@ -1,5 +1,7 @@
 using UMS.Shared.Academic;
 using UMS.Shared.Admission;
+using UMS.Shared.Alumni;
+using UMS.Shared.Career;
 using UMS.Shared.Content;
 using UMS.Shared.Faculty;
 using UMS.Shared.Finance;
@@ -97,4 +99,20 @@ public sealed class FakeContentReportingQuery : IContentReportingQuery
     public ContentDashboardSnapshot Snapshot { get; set; } = new(25, 4, 8, 60);
 
     public Task<ContentDashboardSnapshot> GetDashboardSnapshotAsync(CancellationToken cancellationToken = default) => Task.FromResult(Snapshot);
+}
+
+/// <summary>Flow #31: fakes the real <c>AlumniReportingQueryAdapter</c> - the eighth, Alumni-owned admin dashboard (the same deliberate scope extension Flow #26 already made for Content, see <c>UMS.Shared.Alumni.IAlumniReportingQuery</c>'s own remarks).</summary>
+public sealed class FakeAlumniReportingQuery : IAlumniReportingQuery
+{
+    public AlumniDashboardSnapshot Snapshot { get; set; } = new(1200, new Dictionary<string, decimal> { ["BDT"] = 800_000m, ["USD"] = 15_000m }, 45, 30);
+
+    public Task<AlumniDashboardSnapshot> GetDashboardSnapshotAsync(CancellationToken cancellationToken = default) => Task.FromResult(Snapshot);
+}
+
+/// <summary>Flow #31: fakes the real <c>CareerReportingQueryAdapter</c> - the ninth, Career-owned admin dashboard (the same deliberate scope extension Flow #26 already made for Content, see <c>UMS.Shared.Career.ICareerReportingQuery</c>'s own remarks).</summary>
+public sealed class FakeCareerReportingQuery : ICareerReportingQuery
+{
+    public CareerDashboardSnapshot Snapshot { get; set; } = new(80, 55, 12, 300, 90);
+
+    public Task<CareerDashboardSnapshot> GetDashboardSnapshotAsync(CancellationToken cancellationToken = default) => Task.FromResult(Snapshot);
 }
