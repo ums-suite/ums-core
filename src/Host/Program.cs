@@ -10,6 +10,8 @@ using UMS.Modules.Alumni.Api;
 using UMS.Modules.Alumni.Infrastructure;
 using UMS.Modules.Audit.Api;
 using UMS.Modules.Audit.Infrastructure;
+using UMS.Modules.Career.Api;
+using UMS.Modules.Career.Infrastructure;
 using UMS.Modules.Content.Api;
 using UMS.Modules.Content.Infrastructure;
 using UMS.Modules.Documents.Api;
@@ -188,6 +190,14 @@ builder.Services.AddResearchModule(builder.Configuration);
 // (ALM-15 fan-out) is already registered above.
 builder.Services.AddAlumniModule(builder.Configuration);
 
+// Career (release/DEVELOPMENT_PLAN.md Flow #30) - depends on Identity, Student (Student.status live
+// reads via UMS.Shared.Student.IStudentStatusChecker, plus StudentGraduated/StudentStatusChanged
+// outbox consumption - never a live schema query, module-boundaries.md/ADR-0002), Organization
+// (UMS.Shared.Organization.IRoomExistenceChecker for a Drive's venue, registered above), and
+// Documents (UMS.Shared.Documents.IUploadedArtifactRequester for ResumeProfile storage, registered
+// above) - ZERO dependency on Alumni, Academic, or Finance.
+builder.Services.AddCareerModule(builder.Configuration);
+
 // Reporting (release/DEVELOPMENT_PLAN.md Flow #22) - ADR-0013 permits this one module to depend on
 // every other module's own READ-ONLY cross-module reporting-query contract
 // (UMS.Shared.Academic/Admission/Finance/Faculty/Hostel/Library.IXxxReportingQuery), all real by
@@ -293,6 +303,7 @@ await app.Services.UseLibraryModuleAsync();
 await app.Services.UseContentModuleAsync();
 await app.Services.UseResearchModuleAsync();
 await app.Services.UseAlumniModuleAsync();
+await app.Services.UseCareerModuleAsync();
 await app.Services.UseReportingModuleAsync();
 
 app.UseUmsObservability();
@@ -333,6 +344,7 @@ app.MapLibraryModule();
 app.MapContentModule();
 app.MapResearchModule();
 app.MapAlumniModule();
+app.MapCareerModule();
 app.MapReportingModule();
 
 app.Run();
