@@ -38,6 +38,8 @@
     <ProjectReference Include="..\..\src\Shared\UMS.Shared.Library\UMS.Shared.Library.csproj" />
     <ProjectReference Include="..\..\src\Shared\UMS.Shared.Research\UMS.Shared.Research.csproj" />
     <ProjectReference Include="..\..\src\Shared\UMS.Shared.Content\UMS.Shared.Content.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Alumni\UMS.Shared.Alumni.csproj" />
+    <ProjectReference Include="..\..\src\Shared\UMS.Shared.Career\UMS.Shared.Career.csproj" />
   </ItemGroup>
 
 </Project>

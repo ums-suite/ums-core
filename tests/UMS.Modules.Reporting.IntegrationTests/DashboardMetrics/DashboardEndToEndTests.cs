@@ -64,6 +64,8 @@ public sealed class DashboardEndToEndTests(ReportingServiceFixture fixture)
     [InlineData("admission-dashboard")]
     [InlineData("content-dashboard")]
     [InlineData("research-dashboard")]
+    [InlineData("alumni-dashboard")]
+    [InlineData("career-dashboard")]
     public async Task Every_remaining_dashboard_family_also_refreshes_to_Computed(string metricKey)
     {
         using (var scope = fixture.Services.CreateScope())
@@ -81,6 +83,11 @@ public sealed class DashboardEndToEndTests(ReportingServiceFixture fixture)
                 // pipeline instead of an Admin dashboard endpoint.
                 "content-dashboard" => scope.ServiceProvider.GetRequiredService<ContentDashboardRefreshService>(),
                 "research-dashboard" => scope.ServiceProvider.GetRequiredService<ResearchDashboardRefreshService>(),
+                // Flow #31: "alumni-dashboard"/"career-dashboard" are the eighth/ninth, Admin-facing
+                // dashboard families - the same deliberate scope extension Flow #26 already made for
+                // Content, applied identically here.
+                "alumni-dashboard" => scope.ServiceProvider.GetRequiredService<AlumniDashboardRefreshService>(),
+                "career-dashboard" => scope.ServiceProvider.GetRequiredService<CareerDashboardRefreshService>(),
                 _ => throw new InvalidOperationException(),
             };
 
@@ -111,6 +118,51 @@ public sealed class DashboardEndToEndTests(ReportingServiceFixture fixture)
         var payload = response.Payload!.Value;
         Assert.Equal(fixture.ContentQuery.Snapshot.PublishedNoticeCount, payload.GetProperty("PublishedNoticeCount").GetInt32());
         Assert.Equal(fixture.ContentQuery.Snapshot.UpcomingEventCount, payload.GetProperty("UpcomingEventCount").GetInt32());
+    }
+
+    [Fact]
+    public async Task The_Alumni_dashboard_exposes_its_own_real_aggregate_payload()
+    {
+        using (var scope = fixture.Services.CreateScope())
+        {
+            var service = scope.ServiceProvider.GetRequiredService<AlumniDashboardRefreshService>();
+            await service.RunAsync();
+        }
+
+        using var readScope = fixture.Services.CreateScope();
+        var reader = readScope.ServiceProvider.GetRequiredService<DashboardMetricReadService>();
+        var response = await reader.GetAsync(AlumniDashboardRefreshService.MetricKeyValue);
+
+        Assert.Equal(DashboardMetricComputationStatus.Computed, response.Status);
+        var payload = response.Payload!.Value;
+        Assert.Equal(fixture.AlumniQuery.Snapshot.TotalAlumnusCount, payload.GetProperty("TotalAlumnusCount").GetInt32());
+        Assert.Equal(fixture.AlumniQuery.Snapshot.ActiveJobPostingCount, payload.GetProperty("ActiveJobPostingCount").GetInt32());
+        Assert.Equal(fixture.AlumniQuery.Snapshot.ActiveMentorshipMatchCount, payload.GetProperty("ActiveMentorshipMatchCount").GetInt32());
+        Assert.Equal(
+            fixture.AlumniQuery.Snapshot.ConfirmedDonationAmountByCurrency["BDT"],
+            payload.GetProperty("ConfirmedDonationAmountByCurrency").GetProperty("BDT").GetDecimal());
+    }
+
+    [Fact]
+    public async Task The_Career_dashboard_exposes_its_own_real_aggregate_payload()
+    {
+        using (var scope = fixture.Services.CreateScope())
+        {
+            var service = scope.ServiceProvider.GetRequiredService<CareerDashboardRefreshService>();
+            await service.RunAsync();
+        }
+
+        using var readScope = fixture.Services.CreateScope();
+        var reader = readScope.ServiceProvider.GetRequiredService<DashboardMetricReadService>();
+        var response = await reader.GetAsync(CareerDashboardRefreshService.MetricKeyValue);
+
+        Assert.Equal(DashboardMetricComputationStatus.Computed, response.Status);
+        var payload = response.Payload!.Value;
+        Assert.Equal(fixture.CareerQuery.Snapshot.TotalInternshipCount, payload.GetProperty("TotalInternshipCount").GetInt32());
+        Assert.Equal(fixture.CareerQuery.Snapshot.PublishedInternshipCount, payload.GetProperty("PublishedInternshipCount").GetInt32());
+        Assert.Equal(fixture.CareerQuery.Snapshot.TotalCampusRecruitmentDriveCount, payload.GetProperty("TotalCampusRecruitmentDriveCount").GetInt32());
+        Assert.Equal(fixture.CareerQuery.Snapshot.TotalCareerApplicationCount, payload.GetProperty("TotalCareerApplicationCount").GetInt32());
+        Assert.Equal(fixture.CareerQuery.Snapshot.TotalInterviewSlotBookings, payload.GetProperty("TotalInterviewSlotBookings").GetInt32());
     }
 
     [Fact]
