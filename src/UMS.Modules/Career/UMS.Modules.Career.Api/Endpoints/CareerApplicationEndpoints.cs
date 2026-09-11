@@ -18,6 +18,30 @@ internal static class CareerApplicationEndpoints
     {
         var applications = group.MapGroup("/applications");
 
+        // requirement-spec.md §6: "Student's own applications; staff view with scope filters" - a
+        // Career-Services-staff/Admin caller passing internshipId/driveId gets that scoped review
+        // list; every other caller (or a staff caller passing neither filter) gets their own.
+        applications.MapGet("/", async (Guid? internshipId, Guid? driveId, HttpContext httpContext, CareerApplicationReviewService service, IPermissionResolver permissionResolver, IStudentStatusChecker studentStatusChecker, CancellationToken cancellationToken) =>
+        {
+            if ((internshipId is not null || driveId is not null) && await HasEitherManagePermissionAsync(httpContext, permissionResolver, cancellationToken).ConfigureAwait(false))
+            {
+                if (internshipId is { } id)
+                {
+                    return Results.Ok(await service.ListByInternshipAsync(id, cancellationToken).ConfigureAwait(false));
+                }
+
+                return Results.Ok(await service.ListByDriveAsync(driveId!.Value, cancellationToken).ConfigureAwait(false));
+            }
+
+            var studentId = await studentStatusChecker.ResolveStudentIdAsync(httpContext.User.GetUserId(), cancellationToken).ConfigureAwait(false);
+            if (studentId.IsFailure)
+            {
+                return studentId.Error!.ToProblemResult(httpContext);
+            }
+
+            return Results.Ok(await service.ListByStudentAsync(studentId.Value, cancellationToken).ConfigureAwait(false));
+        }).RequireLiveSession();
+
         applications.MapGet("/mine", async (HttpContext httpContext, CareerApplicationReviewService service, IStudentStatusChecker studentStatusChecker, CancellationToken cancellationToken) =>
         {
             var studentId = await studentStatusChecker.ResolveStudentIdAsync(httpContext.User.GetUserId(), cancellationToken).ConfigureAwait(false);
