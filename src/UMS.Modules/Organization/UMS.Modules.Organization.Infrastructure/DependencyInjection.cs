@@ -72,6 +72,10 @@ public static class DependencyInjection
         // grievance-escalation routing needs - see IOrganizationHierarchyQuery's own remarks.
         services.AddScoped<IOrganizationHierarchyQuery, OrganizationHierarchyQuery>();
 
+        // CAR-10: the one real implementation Career (Flow #30) resolves a CampusRecruitmentDrive's
+        // venue reference against - see IRoomExistenceChecker's own remarks.
+        services.AddScoped<IRoomExistenceChecker, RoomExistenceChecker>();
+
         // Shares the platform's one Redis connection (UMS.Shared.Resilience.AddUmsResilience), never a second multiplexer (ADR-0007).
         services.AddScoped<IOrganizationTreeCache, RedisOrganizationTreeCache>();
 

@@ -3,6 +3,7 @@ using UMS.Modules.Academic.Infrastructure;
 using UMS.Modules.Admission.Infrastructure;
 using UMS.Modules.Alumni.Infrastructure;
 using UMS.Modules.Audit.Infrastructure;
+using UMS.Modules.Career.Infrastructure;
 using UMS.Modules.Content.Infrastructure;
 using UMS.Modules.Documents.Infrastructure;
 using UMS.Modules.Faculty.Infrastructure;
@@ -23,6 +24,7 @@ using UMS.Workers.Admission;
 using UMS.Workers.Alumni;
 using UMS.Workers.AuditExports;
 using UMS.Workers.BulkDocumentGeneration;
+using UMS.Workers.Career;
 using UMS.Workers.Content;
 using UMS.Workers.Faculty;
 using UMS.Workers.Finance;
@@ -211,6 +213,20 @@ builder.Services.AddHostedService<AlumniFinancePaymentRelayWorker>();
 builder.Services.AddHostedService<JobPostingExpirySweepWorker>();
 builder.Services.AddHostedService<RecurringDonationSchedulerWorker>();
 builder.Services.AddHostedService<AlumniNotificationRelayWorker>();
+
+// Career (release/DEVELOPMENT_PLAN.md Flow #30) - three background pieces: CAR-16's Student status
+// relay (polls Student's own outbox for StudentGraduated/StudentStatusChanged, mirroring
+// AlumniStudentGraduatedRelayWorker's own shape - deliberately performs NO mutation to any existing
+// CareerApplication), CAR-3's Internship deadline sweep (mirrors JobPostingExpirySweepWorker), and
+// the CAR-17 Notifications fan-out relay (InternshipPublished/CareerApplicationStatusChanged/
+// InterviewSlotBooked - CareerApplicationCancelled is deliberately excluded, already published
+// synchronously by the withdrawal/cancellation cascade handlers themselves). Depends on Identity,
+// Student, Organization, and Documents - all already registered above; ZERO dependency on Alumni,
+// Academic, or Finance.
+builder.Services.AddCareerModule(builder.Configuration);
+builder.Services.AddHostedService<CareerStudentStatusRelayWorker>();
+builder.Services.AddHostedService<InternshipDeadlineSweepWorker>();
+builder.Services.AddHostedService<CareerNotificationRelayWorker>();
 
 // Reporting (release/DEVELOPMENT_PLAN.md Flow #22, topped up by Flow #26 "Reporting - Content &
 // Research top-up") - ADR-0013's "depends on everything" module: eight independent
