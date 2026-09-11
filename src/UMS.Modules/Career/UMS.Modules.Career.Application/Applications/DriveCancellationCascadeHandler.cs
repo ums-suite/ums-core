@@ -1,8 +1,10 @@
+using Microsoft.Extensions.Logging;
 using UMS.Modules.Career.Application.Abstractions;
 using UMS.Modules.Career.Application.Common;
 using UMS.Modules.Career.Domain.Applications;
 using UMS.Modules.Career.Domain.Drives;
 using UMS.Shared.Audit;
+using UMS.Shared.Student;
 
 namespace UMS.Modules.Career.Application.Applications;
 
@@ -12,6 +14,12 @@ namespace UMS.Modules.Career.Application.Applications;
 /// bullet: "one cascade mechanism, two triggering events, not two bespoke implementations"),
 /// additionally releasing any booked `InterviewSlot`'s capacity atomically for a
 /// `CareerApplication` that had reached `InterviewScheduled` (edge-cases.md's resolved bullet).
+///
+/// <para>
+/// `NotificationRequest.RecipientId` must be the Identity <c>UserId</c> - resolved fresh per
+/// affected Student via `IStudentStatusChecker.GetByStudentIdAsync`, mirroring
+/// <see cref="InternshipWithdrawalCascadeHandler"/>'s own resolution exactly.
+/// </para>
 /// </summary>
 public sealed class DriveCancellationCascadeHandler(
     ICareerApplicationRepository applications,
@@ -19,7 +27,9 @@ public sealed class DriveCancellationCascadeHandler(
     IUnitOfWork unitOfWork,
     IAuditRecorder auditRecorder,
     ICareerNotificationPublisher notifications,
-    IClock clock)
+    IStudentStatusChecker studentStatusChecker,
+    IClock clock,
+    ILogger<DriveCancellationCascadeHandler> logger)
 {
     public async Task<int> HandleAsync(Guid driveId, string correlationId, CancellationToken cancellationToken = default)
     {
@@ -54,13 +64,22 @@ public sealed class DriveCancellationCascadeHandler(
             }
 
             cancelledCount++;
-            await notifications.PublishAsync(
-                new CareerNotificationRequest(
-                    "CareerApplicationCancelled",
-                    application.Id.Value.ToString(),
-                    application.StudentId,
-                    new Dictionary<string, string> { ["driveId"] = driveId.ToString(), ["reason"] = "drive_cancelled" }),
-                cancellationToken).ConfigureAwait(false);
+
+            var standing = await studentStatusChecker.GetByStudentIdAsync(application.StudentId, cancellationToken).ConfigureAwait(false);
+            if (standing?.IdentityUserId is { } recipientId)
+            {
+                await notifications.PublishAsync(
+                    new CareerNotificationRequest(
+                        "CareerApplicationCancelled",
+                        application.Id.Value.ToString(),
+                        recipientId,
+                        new Dictionary<string, string> { ["driveId"] = driveId.ToString(), ["reason"] = "drive_cancelled" }),
+                    cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                logger.LogWarning("Drive cancellation cascade: CareerApplication {CareerApplicationId} has no resolvable Identity recipient for Student {StudentId} - skipping the mandatory cancellation notice.", application.Id.Value, application.StudentId);
+            }
         }
 
         return cancelledCount;

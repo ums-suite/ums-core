@@ -1,7 +1,9 @@
+using Microsoft.Extensions.Logging;
 using UMS.Modules.Career.Application.Abstractions;
 using UMS.Modules.Career.Application.Common;
 using UMS.Modules.Career.Domain.Internships;
 using UMS.Shared.Audit;
+using UMS.Shared.Student;
 
 namespace UMS.Modules.Career.Application.Applications;
 
@@ -14,13 +16,23 @@ namespace UMS.Modules.Career.Application.Applications;
 /// <c>CancelDueToPostingWithdrawal()</c> method, in its OWN transaction (never one giant transaction
 /// spanning the whole fan-out), with a mandatory `NotificationRequest` and an audited
 /// `AuditLogEntry` per affected Student (requirement-spec.md §2.6, §5).
+///
+/// <para>
+/// `NotificationRequest.RecipientId` must be the Identity <c>UserId</c>
+/// (<c>UMS.Shared.Notifications.INotificationRequestIntake</c>'s own contract), never
+/// `CareerApplication.StudentId` directly - resolved fresh per affected Student via
+/// `IStudentStatusChecker.GetByStudentIdAsync`, mirroring every other module's own cascade/relay
+/// notification resolution exactly.
+/// </para>
 /// </summary>
 public sealed class InternshipWithdrawalCascadeHandler(
     ICareerApplicationRepository applications,
     IUnitOfWork unitOfWork,
     IAuditRecorder auditRecorder,
     ICareerNotificationPublisher notifications,
-    IClock clock)
+    IStudentStatusChecker studentStatusChecker,
+    IClock clock,
+    ILogger<InternshipWithdrawalCascadeHandler> logger)
 {
     public async Task<int> HandleAsync(Guid internshipId, string correlationId, CancellationToken cancellationToken = default)
     {
@@ -48,13 +60,22 @@ public sealed class InternshipWithdrawalCascadeHandler(
             }
 
             cancelledCount++;
-            await notifications.PublishAsync(
-                new CareerNotificationRequest(
-                    "CareerApplicationCancelled",
-                    application.Id.Value.ToString(),
-                    application.StudentId,
-                    new Dictionary<string, string> { ["internshipId"] = internshipId.ToString(), ["reason"] = "internship_withdrawn" }),
-                cancellationToken).ConfigureAwait(false);
+
+            var standing = await studentStatusChecker.GetByStudentIdAsync(application.StudentId, cancellationToken).ConfigureAwait(false);
+            if (standing?.IdentityUserId is { } recipientId)
+            {
+                await notifications.PublishAsync(
+                    new CareerNotificationRequest(
+                        "CareerApplicationCancelled",
+                        application.Id.Value.ToString(),
+                        recipientId,
+                        new Dictionary<string, string> { ["internshipId"] = internshipId.ToString(), ["reason"] = "internship_withdrawn" }),
+                    cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                logger.LogWarning("Internship withdrawal cascade: CareerApplication {CareerApplicationId} has no resolvable Identity recipient for Student {StudentId} - skipping the mandatory cancellation notice.", application.Id.Value, application.StudentId);
+            }
         }
 
         return cancelledCount;
