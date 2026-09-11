@@ -18,6 +18,12 @@ public static class ReportingPermissions
     /// <summary>Flow #26: the seventh, Content-owned admin dashboard - see <c>UMS.Shared.Content.IContentReportingQuery</c>'s own remarks for why this is a deliberate scope extension. No separate permission exists for the "research-dashboard" DashboardMetric - it has no Admin-facing GET route of its own (see <c>ResearchDashboardRefreshService</c>'s own remarks), so <see cref="RegulatoryRun"/> already gates its only consumer.</summary>
     public const string DashboardReadContent = "reporting.dashboard.content";
 
+    /// <summary>Flow #31: the eighth, Alumni-owned admin dashboard - see <c>UMS.Shared.Alumni.IAlumniReportingQuery</c>'s own remarks for why this is a deliberate scope extension, the same judgment call Flow #26 already made for Content.</summary>
+    public const string DashboardReadAlumni = "reporting.dashboard.alumni";
+
+    /// <summary>Flow #31: the ninth, Career-owned admin dashboard - see <c>UMS.Shared.Career.ICareerReportingQuery</c>'s own remarks for why this is a deliberate scope extension, the same judgment call Flow #26 already made for Content.</summary>
+    public const string DashboardReadCareer = "reporting.dashboard.career";
+
     public const string RegulatoryManage = "reporting.regulatory.manage";
     public const string RegulatoryRun = "reporting.regulatory.run";
 }

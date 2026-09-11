@@ -229,15 +229,18 @@ builder.Services.AddHostedService<InternshipDeadlineSweepWorker>();
 builder.Services.AddHostedService<CareerNotificationRelayWorker>();
 
 // Reporting (release/DEVELOPMENT_PLAN.md Flow #22, topped up by Flow #26 "Reporting - Content &
-// Research top-up") - ADR-0013's "depends on everything" module: eight independent
-// per-dashboard-family refresh workers (RPT-1/RPT-4..9 plus Flow #26's Research/Content additions,
-// design-decisions.md - no single mega-scheduler), each acquiring RPT-1's Redis lease before
-// running, plus the RegulatoryReportRun poll relay (RPT-12/RPT-13). Depends on Academic, Admission,
-// Finance, Faculty, Hostel, Library, Research, and Content's own read-only reporting-query
-// contracts, Documents (RPT-13 PDF generation), and Notifications, all already registered above.
+// Research top-up" and Flow #31 "Reporting - Alumni & Career top-up") - ADR-0013's "depends on
+// everything" module: ten independent per-dashboard-family refresh workers (RPT-1/RPT-4..9 plus
+// Flow #26's Research/Content additions and Flow #31's Alumni/Career additions, design-decisions.md -
+// no single mega-scheduler), each acquiring RPT-1's Redis lease before running, plus the
+// RegulatoryReportRun poll relay (RPT-12/RPT-13). Depends on Academic, Admission, Finance, Faculty,
+// Hostel, Library, Research, Content, Alumni, and Career's own read-only reporting-query contracts,
+// Documents (RPT-13 PDF generation), and Notifications, all already registered above.
 // ResearchMetricRefreshWorker has no Admin-facing dashboard route of its own (see
 // ResearchDashboardRefreshService's own remarks) - it exists solely to keep the "research-dashboard"
-// DashboardMetric fresh for the regulatory-report pipeline's "Research" category.
+// DashboardMetric fresh for the regulatory-report pipeline's "Research" category. AlumniMetricRefreshWorker/
+// CareerMetricRefreshWorker are the same deliberate scope extension Flow #26 already made for
+// Content, applied identically - unlike Research, neither had an existing seeder proxy to fix.
 builder.Services.AddReportingModule(builder.Configuration);
 builder.Services.AddHostedService<AcademicMetricRefreshWorker>();
 builder.Services.AddHostedService<AdmissionMetricRefreshWorker>();
@@ -247,6 +250,8 @@ builder.Services.AddHostedService<HostelMetricRefreshWorker>();
 builder.Services.AddHostedService<LibraryMetricRefreshWorker>();
 builder.Services.AddHostedService<ResearchMetricRefreshWorker>();
 builder.Services.AddHostedService<ContentMetricRefreshWorker>();
+builder.Services.AddHostedService<AlumniMetricRefreshWorker>();
+builder.Services.AddHostedService<CareerMetricRefreshWorker>();
 builder.Services.AddHostedService<RegulatoryReportRunRelayWorker>();
 
 // Same readiness contract as UMS.Host (ums-conventions.md, Observability: "UMS.Workers exposes
